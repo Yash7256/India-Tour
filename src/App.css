@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.mandala-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'%3E%3C/circle%3E%3Ccircle cx='30' cy='30' r='8'%3E%3C/circle%3E%3Ccircle cx='30' cy='30' r='16'%3E%3C/circle%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.parallax-hero {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (max-width: 768px) {
+  .parallax-hero {
+    background-attachment: scroll;
+  }
+}
+
+.card-hover-effect {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-text {
+  background: linear-gradient(45deg, #f97316, #dc2626, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.festival-animation {
+  animation: festivalGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes festivalGlow {
+  from { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+  to { box-shadow: 0 0 30px rgba(249, 115, 22, 0.6); }
+}
