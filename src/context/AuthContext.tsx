@@ -107,10 +107,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
+    // Get the correct redirect URL based on environment
+    const getRedirectUrl = () => {
+      // For production, use the environment variable or current origin
+      if (process.env.NODE_ENV === 'production') {
+        return process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      }
+      // For development, explicitly use localhost
+      return 'http://localhost:3000';
+    };
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: getRedirectUrl(),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
