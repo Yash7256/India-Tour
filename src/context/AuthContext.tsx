@@ -107,20 +107,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
-    // Get the correct redirect URL based on environment
-    const getRedirectUrl = () => {
-      // For production, use the environment variable or current origin
-      if (process.env.NODE_ENV === 'production') {
-        return process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-      }
-      // For development, explicitly use localhost
-      return 'http://localhost:3000';
-    };
+    // Explicitly set production URL to avoid localhost redirect
+    const redirectUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://india-tour-techkumbh.vercel.app'  // Your exact Vercel URL
+      : 'http://localhost:5173';
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getRedirectUrl(),
+        redirectTo: redirectUrl,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
