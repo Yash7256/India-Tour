@@ -11,7 +11,7 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import { useData } from '../context/DataContext';
+import { useData } from '../context/DataContext.old';
 import { useAuth } from '../context/AuthContext';
 
 const CityPage: React.FC = () => {

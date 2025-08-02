@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
@@ -6,7 +6,7 @@ import CityPage from './pages/CityPage';
 import UserProfile from './pages/UserProfile';
 import DestinationsPage from './pages/DestinationsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { DataProvider } from './context/DataContext';
+import { DataProvider } from './context/DataContext.old';
 import { NotificationProvider } from './context/NotificationContext';
 import './App.css';
 

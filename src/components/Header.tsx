@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MagnifyingGlassIcon, BellIcon, UserIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { useData } from '../context/DataContext';
+import { useData } from '../context/DataContext.old';
 import AuthModal from './AuthModal';
 import NotificationPanel from './NotificationPanel';
 import ProfileEditModal from './ProfileEditModal';
