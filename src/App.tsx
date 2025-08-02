@@ -8,6 +8,7 @@ import DestinationsPage from './pages/DestinationsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext.old';
 import { NotificationProvider } from './context/NotificationContext';
+import PlacesAdmin from './components/admin/PlacesAdmin';
 import './App.css';
 
 function AppContent() {
@@ -50,6 +51,7 @@ function AppContent() {
                 <Route path="/city/:cityId" element={<CityPage />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/destinations" element={<DestinationsPage />} />
+                <Route path="/admin/places" element={<PlacesAdmin />} />
               </Routes>
             </main>
           </div>
