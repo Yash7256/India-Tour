@@ -4,6 +4,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import CityPage from './pages/CityPage';
 import UserProfile from './pages/UserProfile';
+import DestinationsPage from './pages/DestinationsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -48,6 +49,7 @@ function AppContent() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/city/:cityId" element={<CityPage />} />
                 <Route path="/profile" element={<UserProfile />} />
+                <Route path="/destinations" element={<DestinationsPage />} />
               </Routes>
             </main>
           </div>
