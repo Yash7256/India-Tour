@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext.old';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import OptimizedImage from '../components/OptimizedImage';
-import SwipeableCarousel from '../components/SwipeableCarousel';
+import FadeCarousel from '../components/FadeCarousel';
 import { DestinationCardSkeleton, HeroSkeleton } from '../components/SkeletonLoader';
 import { ErrorFallback } from '../components/ErrorBoundary';
 import { useToast } from '../components/Toast';
@@ -139,35 +139,24 @@ const HomePage: React.FC = () => {
 
       {/* Hero Section */}
       <section className="relative h-screen overflow-hidden">
-        <SwipeableCarousel
+        <FadeCarousel
+          images={heroImages.map(img => img.url)}
+          staticHeading="Discover Incredible India"
+          texts={[
+            'Experience Rich Heritage',
+            'Explore Diverse Cultures',
+            'Journey Through History',
+            'Create Unforgettable Memories',
+            'Witness Ancient Traditions'
+          ]}
           autoPlay={true}
-          autoPlayInterval={5000}
-          showDots={true}
-          showArrows={false}
-          onSlideChange={setCurrentSlide}
-          className="h-full"
-        >
-          {heroImages.map((image, index) => (
-            <div key={image.url} className="relative h-screen">
-              <OptimizedImage
-                src={image.url}
-                alt={image.title}
-                className="w-full h-full"
-                loading={index === 0 ? 'eager' : 'lazy'}
-                priority={index === 0}
-                aspectRatio="wide"
-                onError={() => handleImageError(image.url)}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60"></div>
-              
-              {/* Image Caption */}
-              <div className="absolute bottom-16 sm:bottom-20 left-4 sm:left-8 text-white opacity-80">
-                <h3 className="text-lg sm:text-xl font-semibold mb-1">{image.title}</h3>
-                <p className="text-xs sm:text-sm">{image.description}</p>
-              </div>
-            </div>
-          ))}
-        </SwipeableCarousel>
+          autoPlayInterval={6000}
+          className="w-full h-full"
+          imageClassName="object-cover"
+          overlayClassName="bg-gradient-to-t from-black/80 via-black/40 to-transparent"
+          textClassName="font-medium tracking-wide"
+          headingClassName="font-extrabold tracking-tight"
+        />
         
         <div className="relative z-10 h-full flex items-center justify-center text-center px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
