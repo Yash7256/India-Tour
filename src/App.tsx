@@ -9,11 +9,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext.old';
 import { NotificationProvider } from './context/NotificationContext';
 import PlacesAdmin from './components/admin/PlacesAdmin';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastContainer, useToast } from './components/Toast';
 import './App.css';
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { loading: authLoading } = useAuth();
+  const { toasts, removeToast } = useToast();
 
   useEffect(() => {
     // Simulate initial data loading
@@ -40,24 +43,27 @@ function AppContent() {
   }
 
   return (
-    <DataProvider>
-      <NotificationProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50">
-            <Header />
-            <main>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/city/:cityId" element={<CityPage />} />
-                <Route path="/profile" element={<UserProfile />} />
-                <Route path="/destinations" element={<DestinationsPage />} />
-                <Route path="/admin/places" element={<PlacesAdmin />} />
-              </Routes>
-            </main>
-          </div>
-        </Router>
-      </NotificationProvider>
-    </DataProvider>
+    <ErrorBoundary>
+      <DataProvider>
+        <NotificationProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <main>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/city/:cityId" element={<CityPage />} />
+                  <Route path="/profile" element={<UserProfile />} />
+                  <Route path="/destinations" element={<DestinationsPage />} />
+                  <Route path="/admin/places" element={<PlacesAdmin />} />
+                </Routes>
+              </main>
+            </div>
+            <ToastContainer toasts={toasts} onClose={removeToast} />
+          </Router>
+        </NotificationProvider>
+      </DataProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -4,6 +4,11 @@ import { MapPinIcon, CalendarIcon, StarIcon, ArrowRightIcon, PlayIcon } from '@h
 import { useData } from '../context/DataContext.old';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
+import OptimizedImage from '../components/OptimizedImage';
+import SwipeableCarousel from '../components/SwipeableCarousel';
+import { DestinationCardSkeleton, HeroSkeleton } from '../components/SkeletonLoader';
+import { ErrorFallback } from '../components/ErrorBoundary';
+import { useToast } from '../components/Toast';
 
 const HomePage: React.FC = () => {
   const { cities } = useData();
@@ -11,8 +16,19 @@ const HomePage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const { success, error } = useToast();
   
   const featuredCities = cities.slice(0, 6);
+  
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
   const heroImages = [
     {
       url: 'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=1920',
@@ -57,23 +73,45 @@ const HomePage: React.FC = () => {
   }, []);
 
   const handleStartJourney = () => {
-    if (user) {
-      // If logged in, go to destinations with personalized recommendations
-      navigate('/destinations?recommended=true');
-    } else {
-      // If not logged in, go to destinations page
-      navigate('/destinations');
+    try {
+      if (user) {
+        success('Welcome back!', 'Showing personalized recommendations for you');
+        navigate('/destinations?recommended=true');
+      } else {
+        navigate('/destinations');
+      }
+    } catch (err) {
+      error('Navigation Error', 'Unable to navigate to destinations. Please try again.');
     }
   };
 
   const handleWatchVideo = () => {
-    // You can implement a modal or redirect to a video page
-    window.open('https://www.youtube.com/watch?v=your-video-id', '_blank');
+    try {
+      window.open('https://www.youtube.com/watch?v=your-video-id', '_blank');
+      success('Opening Video', 'Enjoy exploring India through our video tour!');
+    } catch (err) {
+      error('Video Error', 'Unable to open video. Please check your connection.');
+    }
   };
 
   const handleImageError = (cityId: string) => {
     console.error(`Failed to load image for city: ${cityId}`);
+    setHasError(true);
   };
+
+  const handleRetry = () => {
+    setHasError(false);
+    setIsLoading(true);
+    window.location.reload();
+  };
+
+  if (hasError) {
+    return <ErrorFallback error="Failed to load homepage content" onRetry={handleRetry} />;
+  }
+
+  if (isLoading) {
+    return <HeroSkeleton />;
+  }
 
   return (
     <div className="min-h-screen">
@@ -101,128 +139,117 @@ const HomePage: React.FC = () => {
 
       {/* Hero Section */}
       <section className="relative h-screen overflow-hidden">
-        <div className="absolute inset-0">
+        <SwipeableCarousel
+          autoPlay={true}
+          autoPlayInterval={5000}
+          showDots={true}
+          showArrows={false}
+          onSlideChange={setCurrentSlide}
+          className="h-full"
+        >
           {heroImages.map((image, index) => (
-            <div
-              key={image.url}
-              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-              }`}
-            >
-              <img
+            <div key={image.url} className="relative h-screen">
+              <OptimizedImage
                 src={image.url}
                 alt={image.title}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(image.url)}
+                className="w-full h-full"
                 loading={index === 0 ? 'eager' : 'lazy'}
+                priority={index === 0}
+                aspectRatio="wide"
+                onError={() => handleImageError(image.url)}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60"></div>
               
               {/* Image Caption */}
-              <div className="absolute bottom-20 left-8 text-white opacity-80">
-                <h3 className="text-xl font-semibold mb-1">{image.title}</h3>
-                <p className="text-sm">{image.description}</p>
+              <div className="absolute bottom-16 sm:bottom-20 left-4 sm:left-8 text-white opacity-80">
+                <h3 className="text-lg sm:text-xl font-semibold mb-1">{image.title}</h3>
+                <p className="text-xs sm:text-sm">{image.description}</p>
               </div>
             </div>
           ))}
-        </div>
+        </SwipeableCarousel>
         
-        <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
+        <div className="relative z-10 h-full flex items-center justify-center text-center px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 animate-fade-in">
               Discover
               <span className="block gradient-text text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-yellow-300 to-orange-300 animate-pulse">
                 Incredible India
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-200 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2">
               Explore diverse cultures, majestic monuments, and unforgettable experiences across the incredible subcontinent
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
               <button 
                 onClick={handleStartJourney}
-                className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center space-x-2 w-full sm:w-auto justify-center"
               >
                 <span>Start Your Journey</span>
-                <ArrowRightIcon className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                <ArrowRightIcon className="h-4 sm:h-5 w-4 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
               </button>
               <button 
                 onClick={handleWatchVideo}
-                className="group border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300 backdrop-blur-sm flex items-center space-x-2"
+                className="group border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300 backdrop-blur-sm flex items-center space-x-2 w-full sm:w-auto justify-center"
               >
-                <PlayIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                <PlayIcon className="h-4 sm:h-5 w-4 sm:w-5 group-hover:scale-110 transition-transform duration-200" />
                 <span>Watch Video</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
-          {heroImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`relative w-12 h-3 rounded-full transition-all duration-300 overflow-hidden ${
-                index === currentSlide ? 'bg-white' : 'bg-white/50'
-              }`}
-            >
-              {index === currentSlide && (
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 rounded-full animate-pulse"></div>
-              )}
-            </button>
-          ))}
-        </div>
+
       </section>
 
       {/* Quick Stats Section */}
-      <section className="py-12 bg-white border-b border-gray-100">
+      <section className="py-8 sm:py-12 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
             <div className="group">
-              <div className="text-3xl font-bold text-orange-600 mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-200">
                 {cities.length}+
               </div>
-              <div className="text-gray-600 font-medium">Destinations</div>
+              <div className="text-sm sm:text-base text-gray-600 font-medium">Destinations</div>
             </div>
             <div className="group">
-              <div className="text-3xl font-bold text-blue-600 mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-200">
                 500+
               </div>
-              <div className="text-gray-600 font-medium">Attractions</div>
+              <div className="text-sm sm:text-base text-gray-600 font-medium">Attractions</div>
             </div>
             <div className="group">
-              <div className="text-3xl font-bold text-green-600 mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-200">
                 50+
               </div>
-              <div className="text-gray-600 font-medium">Cultural Sites</div>
+              <div className="text-sm sm:text-base text-gray-600 font-medium">Cultural Sites</div>
             </div>
             <div className="group">
-              <div className="text-3xl font-bold text-purple-600 mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-200">
                 24/7
               </div>
-              <div className="text-gray-600 font-medium">Support</div>
+              <div className="text-sm sm:text-base text-gray-600 font-medium">Support</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Destinations */}
-      <section className="py-20 bg-gray-50 mandala-pattern relative overflow-hidden">
+      <section className="py-12 sm:py-20 bg-gray-50 mandala-pattern relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=&quot;100&quot; height=&quot;100&quot; viewBox=&quot;0 0 100 100&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23f97316&quot; fill-opacity=&quot;0.03&quot;%3E%3Cpolygon points=&quot;50 0 60 40 100 50 60 60 50 100 40 60 0 50 40 40&quot;/%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
               Featured Destinations
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               Discover the most popular destinations that showcase India's incredible diversity and rich heritage
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredCities.map((city, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {featuredCities.length > 0 ? featuredCities.map((city, index) => (
               <Link
                 key={city.id}
                 to={`/city/${city.id}`}
@@ -230,12 +257,14 @@ const HomePage: React.FC = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="relative overflow-hidden">
-                  <img
+                  <OptimizedImage
                     src={city.featuredImage}
                     alt={city.name}
-                    className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110"
-                    onError={() => handleImageError(city.id)}
+                    className="w-full h-48 sm:h-64"
+                    aspectRatio="photo"
                     loading="lazy"
+                    onError={() => handleImageError(city.id)}
+                    fallbackSrc="https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=400"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
@@ -281,34 +310,39 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
               </Link>
-            ))}
+            )) : (
+              // Show skeleton loaders when no cities are available
+              Array.from({ length: 6 }).map((_, index) => (
+                <DestinationCardSkeleton key={index} />
+              ))
+            )}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-8 sm:mt-12 px-4">
             <Link
               to="/destinations"
-              className="inline-flex items-center px-8 py-3 border-2 border-orange-500 text-orange-600 font-semibold rounded-full hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center px-6 sm:px-8 py-3 border-2 border-orange-500 text-orange-600 font-semibold rounded-full hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
               View All Destinations
-              <ArrowRightIcon className="ml-2 h-5 w-5" />
+              <ArrowRightIcon className="ml-2 h-4 sm:h-5 w-4 sm:w-5" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* Why Choose India Tour */}
-      <section className="py-20 bg-white">
+      <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
               Why Choose India Tour?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               We make exploring India effortless with comprehensive guides, real-time updates, and personalized recommendations
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: '🗺️',
@@ -329,14 +363,14 @@ const HomePage: React.FC = () => {
                 gradient: 'from-green-500 to-teal-500'
               }
             ].map((feature, index) => (
-              <div key={index} className="group text-center p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:bg-gray-50">
-                <div className={`w-16 h-16 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <span className="text-2xl">{feature.icon}</span>
+              <div key={index} className="group text-center p-4 sm:p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:bg-gray-50">
+                <div className={`w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <span className="text-xl sm:text-2xl">{feature.icon}</span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-orange-600 transition-colors duration-200">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 group-hover:text-orange-600 transition-colors duration-200">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -346,21 +380,21 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Cultural Highlights */}
-      <section className="py-20 bg-gradient-to-br from-orange-50 to-red-50 relative overflow-hidden">
+      <section className="py-12 sm:py-20 bg-gradient-to-br from-orange-50 to-red-50 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=&quot;120&quot; height=&quot;120&quot; viewBox=&quot;0 0 120 120&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23f97316&quot; fill-opacity=&quot;0.05&quot;%3E%3Cpath d=&quot;M60 15c-24.3 0-45 20.7-45 45s20.7 45 45 45 45-20.7 45-45-20.7-45-45-45zm0 75c-16.5 0-30-13.5-30-30s13.5-30 30-30 30 13.5 30 30-13.5 30-30 30z&quot;/%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
               Experience India's Rich Culture
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               Immerse yourself in festivals, traditions, cuisine, and arts that make India truly incredible
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            <div className="space-y-6 sm:space-y-8">
               {[
                 {
                   icon: '🎭',
@@ -381,15 +415,15 @@ const HomePage: React.FC = () => {
                   bgColor: 'bg-green-100'
                 }
               ].map((item, index) => (
-                <div key={index} className="group flex items-start space-x-4 hover:bg-white/50 p-4 rounded-xl transition-all duration-300">
-                  <div className={`w-12 h-12 ${item.bgColor} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <span className="text-2xl">{item.icon}</span>
+                <div key={index} className="group flex items-start space-x-3 sm:space-x-4 hover:bg-white/50 p-3 sm:p-4 rounded-xl transition-all duration-300">
+                  <div className={`w-10 sm:w-12 h-10 sm:h-12 ${item.bgColor} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <span className="text-lg sm:text-2xl">{item.icon}</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-200">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 group-hover:text-orange-600 transition-colors duration-200">
                       {item.title}
                     </h3>
-                    <p className="text-gray-600 leading-relaxed">
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
@@ -398,16 +432,17 @@ const HomePage: React.FC = () => {
             </div>
 
             <div className="relative group">
-              <img
+              <OptimizedImage
                 src="https://images.pexels.com/photos/3614513/pexels-photo-3614513.jpeg?auto=compress&cs=tinysrgb&w=800"
                 alt="Indian cultural celebration"
                 className="rounded-2xl shadow-2xl group-hover:scale-105 transition-transform duration-500"
+                aspectRatio="photo"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent rounded-2xl group-hover:from-black/20 transition-all duration-300"></div>
-              <div className="absolute bottom-6 left-6 text-white">
-                <h4 className="text-lg font-semibold mb-1">Cultural Heritage</h4>
-                <p className="text-sm opacity-90">Celebrating diversity and tradition</p>
+              <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 text-white">
+                <h4 className="text-base sm:text-lg font-semibold mb-1">Cultural Heritage</h4>
+                <p className="text-xs sm:text-sm opacity-90">Celebrating diversity and tradition</p>
               </div>
             </div>
           </div>

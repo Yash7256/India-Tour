@@ -13,13 +13,19 @@ import {
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useData } from '../context/DataContext.old';
 import { useAuth } from '../context/AuthContext';
+import InteractiveMap from '../components/InteractiveMap';
+import ReviewSystem from '../components/ReviewSystem';
+import OptimizedImage from '../components/OptimizedImage';
+import { useToast } from '../components/Toast';
 
 const CityPage: React.FC = () => {
   const { cityId } = useParams<{ cityId: string }>();
   const { getCityById } = useData();
   const { user, addToFavorites, removeFromFavorites, loading } = useAuth();
+  const { success } = useToast();
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'attractions' | 'specialties' | 'events' | 'transport'>('attractions');
+  const [activeTab, setActiveTab] = useState<'attractions' | 'specialties' | 'events' | 'transport' | 'reviews'>('attractions');
+  const [showMap, setShowMap] = useState(false);
 
   const city = cityId ? getCityById(cityId) : null;
   const isFavorite = user?.favoriteDestinations.includes(cityId || '') || false;
@@ -46,8 +52,10 @@ const CityPage: React.FC = () => {
     
     if (isFavorite) {
       removeFromFavorites(city.id);
+      success('Removed from favorites', `${city.name} has been removed from your favorites`);
     } else {
       addToFavorites(city.id);
+      success('Added to favorites', `${city.name} has been added to your favorites`);
     }
   };
 
@@ -55,10 +63,11 @@ const CityPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="relative h-96 overflow-hidden">
-        <img
+        <OptimizedImage
           src={city.featuredImage}
           alt={city.name}
           className="w-full h-full object-cover"
+          priority
         />
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
         
@@ -143,7 +152,8 @@ const CityPage: React.FC = () => {
                     { key: 'attractions', label: 'Attractions', icon: '🏛️' },
                     { key: 'specialties', label: 'Local Specialties', icon: '🍛' },
                     { key: 'events', label: 'Events', icon: '🎭' },
-                    { key: 'transport', label: 'Transport', icon: '🚗' }
+                    { key: 'transport', label: 'Transport', icon: '🚗' },
+                    { key: 'reviews', label: 'Reviews', icon: '⭐' }
                   ].map((tab) => (
                     <button
                       key={tab.key}
@@ -310,25 +320,70 @@ const CityPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {activeTab === 'reviews' && (
+                    <div>
+                      <ReviewSystem 
+                        destinationId={city.id} 
+                        destinationName={city.name}
+                        reviews={[]}
+                        averageRating={4.5}
+                        totalReviews={0}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Map Placeholder */}
+              {/* Interactive Map */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Location</h3>
-                <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                  <div className="text-center text-gray-600">
-                    <MapPinIcon className="h-12 w-12 mx-auto mb-2" />
-                    <p>Interactive map will be displayed here</p>
-                    <p className="text-sm">Google Maps integration</p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Location</h3>
+                  <button
+                    onClick={() => setShowMap(!showMap)}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    {showMap ? 'Hide Map' : 'Show Map'}
+                  </button>
+                </div>
+                {showMap ? (
+                  <div className="h-64">
+                    <InteractiveMap
+                      center={{ lat: city.coordinates.lat, lng: city.coordinates.lng }}
+                      locations={[
+                        {
+                          id: city.id,
+                          name: city.name,
+                          latitude: city.coordinates.lat,
+                          longitude: city.coordinates.lng,
+                          type: 'city' as const,
+                          description: city.description
+                        },
+                        ...city.attractions.map(attraction => ({
+                          id: attraction.id,
+                          name: attraction.name,
+                          latitude: city.coordinates.lat + (Math.random() - 0.5) * 0.01,
+                          longitude: city.coordinates.lng + (Math.random() - 0.5) * 0.01,
+                          type: 'attraction' as const,
+                          description: attraction.description
+                        }))
+                      ]}
+                      onLocationClick={(location) => setSelectedAttraction(location.id)}
+                      selectedLocationId={selectedAttraction || undefined}
+                    />
                   </div>
-                </div>
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Coordinates: {city.coordinates.lat}, {city.coordinates.lng}</p>
-                </div>
+                ) : (
+                  <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
+                    <div className="text-center text-gray-600">
+                      <MapPinIcon className="h-12 w-12 mx-auto mb-2" />
+                      <p>Click "Show Map" to view interactive map</p>
+                      <p className="text-sm mt-2">Coordinates: {city.coordinates.lat}, {city.coordinates.lng}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Weather Widget */}
