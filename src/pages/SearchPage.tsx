@@ -5,8 +5,8 @@ import InteractiveMap from '../components/InteractiveMap';
 import OptimizedImage from '../components/OptimizedImage';
 import { DestinationCardSkeleton } from '../components/SkeletonLoader';
 import { ErrorFallback } from '../components/ErrorBoundary';
-import { MapPinIcon, StarIcon, CalendarIcon, FilterIcon, ViewColumnsIcon, MapIcon } from '@heroicons/react/24/outline';
-import { useData } from '../context/DataContext.old';
+import { MapPinIcon, StarIcon, CalendarIcon, FunnelIcon, ViewColumnsIcon, MapIcon } from '@heroicons/react/24/outline';
+import { useData } from '../context/DataContext';
 import { useToast } from '../components/Toast';
 
 interface SearchFilters {
@@ -21,7 +21,7 @@ interface SearchFilters {
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { cities } = useData();
+  const { places: cities } = useData();
   const { success, error } = useToast();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -29,7 +29,7 @@ const SearchPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState(cities);
-  const [showFilters, setShowFilters] = useState(false);
+  
 
   // Search suggestions based on available data
   const searchSuggestions = [
@@ -91,7 +91,7 @@ const SearchPage: React.FC = () => {
       }
 
       if (searchFilters.rating) {
-        results = results.filter(city => 4.5 >= searchFilters.rating!); // Assuming all cities have 4.5+ rating
+        results = results.filter(city => city.rating >= searchFilters.rating!);
       }
 
       // Sort results
@@ -143,10 +143,6 @@ const SearchPage: React.FC = () => {
     navigate(`/city/${location.id}`);
   };
 
-  const getUniqueStates = () => {
-    return Array.from(new Set(cities.map(city => city.state))).sort();
-  };
-
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {isLoading ? (
@@ -161,7 +157,7 @@ const SearchPage: React.FC = () => {
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer group"
           >
             <OptimizedImage
-              src={city.featuredImage}
+              src={city.images[0]}
               alt={city.name}
               className="w-full h-48"
               aspectRatio="photo"
@@ -190,7 +186,7 @@ const SearchPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-500">
                   <CalendarIcon className="w-4 h-4 mr-1" />
-                  <span>{city.bestTimeToVisit}</span>
+                  <span>{city.best_time_to_visit}</span>
                 </div>
                 <span className="text-orange-600 font-medium text-sm">
                   Explore →
@@ -218,7 +214,7 @@ const SearchPage: React.FC = () => {
           >
             <div className="flex">
               <OptimizedImage
-                src={city.featuredImage}
+                src={city.images[0]}
                 alt={city.name}
                 className="w-48 h-32 flex-shrink-0"
                 aspectRatio="photo"
@@ -247,7 +243,7 @@ const SearchPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center text-sm text-gray-500">
                     <CalendarIcon className="w-4 h-4 mr-1" />
-                    <span>{city.bestTimeToVisit}</span>
+                    <span>{city.best_time_to_visit}</span>
                   </div>
                   <span className="text-orange-600 font-medium">
                     Explore →
@@ -334,7 +330,7 @@ const SearchPage: React.FC = () => {
                 viewMode === 'list' ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <FilterIcon className="w-5 h-5" />
+              <FunnelIcon className="h-4 w-4" />
             </button>
             
             <button

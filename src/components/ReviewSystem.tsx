@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StarIcon, UserCircleIcon, HandThumbUpIcon, HandThumbDownIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
@@ -37,7 +37,7 @@ interface ReviewSystemProps {
 }
 
 const ReviewSystem: React.FC<ReviewSystemProps> = ({
-  destinationId,
+  destinationId: _destinationId,
   destinationName,
   reviews,
   averageRating,

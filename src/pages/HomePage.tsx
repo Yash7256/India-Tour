@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
   const { getActiveNotifications } = useNotifications();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [_currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const { success, error } = useToast();
