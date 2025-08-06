@@ -1,5 +1,5 @@
 import React from 'react';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 
 const DestinationsPage: React.FC = () => {

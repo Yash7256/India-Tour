@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
@@ -26,7 +28,7 @@ const SwipeableCarousel: React.FC<SwipeableCarouselProps> = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalSlides = children.length;
 

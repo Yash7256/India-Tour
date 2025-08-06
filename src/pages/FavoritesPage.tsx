@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   HeartIcon, 
   MapPinIcon, 
   StarIcon,
   ShareIcon,
-  TrashIcon,
   EyeIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 import OptimizedImage from '../components/OptimizedImage';
 import Breadcrumb from '../components/Breadcrumb';
 import SEOHead from '../components/SEOHead';
@@ -18,11 +17,42 @@ import { useToast } from '../components/Toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const FavoritesPage: React.FC = () => {
-  const { user, removeFromFavorites, loading } = useAuth();
-  const { getCityById } = useData();
+  const { user, removeFromFavorites } = useAuth();
+  const { getPlaceById } = useData();
   const { success, error } = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'dateAdded' | 'rating'>('dateAdded');
+  const [favoritePlaces, setFavoritePlaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Load favorite places
+  useEffect(() => {
+    const loadFavoritePlaces = async () => {
+      if (user?.favoriteDestinations && user.favoriteDestinations.length > 0) {
+        setLoading(true);
+        try {
+          const favoritePlacesData = [];
+          for (const placeId of user.favoriteDestinations) {
+            const placeData = await getPlaceById(placeId);
+            if (placeData) {
+              favoritePlacesData.push(placeData.place);
+            }
+          }
+          setFavoritePlaces(favoritePlacesData);
+        } catch (err) {
+          console.error('Error loading favorite places:', err);
+          error('Failed to load favorite destinations');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setFavoritePlaces([]);
+        setLoading(false);
+      }
+    };
+    
+    loadFavoritePlaces();
+  }, [user, getPlaceById]);
 
   if (!user) {
     return (
@@ -42,31 +72,11 @@ const FavoritesPage: React.FC = () => {
     );
   }
 
-  const favoriteDestinations = user.favoriteDestinations
-    .map(id => getCityById(id))
-    .filter(city => city !== null);
+  // Use the loaded favorite places
 
   const handleRemoveFavorite = (cityId: string, cityName: string) => {
     removeFromFavorites(cityId);
     success('Removed from favorites', `${cityName} has been removed from your favorites`);
-  };
-
-  const handleShare = async (city: any) => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `${city.name} - India Tour`,
-          text: `Check out ${city.name}: ${city.description}`,
-          url: `${window.location.origin}/city/${city.id}`
-        });
-      } else {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(`${window.location.origin}/city/${city.id}`);
-        success('Link copied', 'Destination link copied to clipboard');
-      }
-    } catch (err) {
-      error('Share failed', 'Unable to share destination');
-    }
   };
 
   if (loading) {
@@ -94,11 +104,11 @@ const FavoritesPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">My Favorites</h1>
             <p className="text-gray-600">
-              {favoriteDestinations.length} saved destination{favoriteDestinations.length !== 1 ? 's' : ''}
+              {favoritePlaces.length} saved destination{favoritePlaces.length !== 1 ? 's' : ''}
             </p>
           </div>
 
-          {favoriteDestinations.length > 0 && (
+          {favoritePlaces.length > 0 && (
             <div className="flex items-center space-x-4 mt-4 sm:mt-0">
               {/* Sort Options */}
               <select
@@ -138,104 +148,156 @@ const FavoritesPage: React.FC = () => {
           )}
         </div>
 
-        {/* Empty State */}
-        {favoriteDestinations.length === 0 ? (
-          <div className="text-center py-16">
-            <HeartIcon className="h-24 w-24 text-gray-300 mx-auto mb-6" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No favorites yet</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Start exploring destinations and save your favorites to plan your perfect trip to India.
-            </p>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner />
+          </div>
+        ) : favoritePlaces.length === 0 ? (
+          <div className="text-center py-12">
+            <HeartIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No favorite destinations yet</h3>
+            <p className="text-gray-500 mb-6">Start exploring and add places to your favorites</p>
             <Link
               to="/"
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 inline-flex items-center space-x-2"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
             >
-              <EyeIcon className="h-5 w-5" />
-              <span>Explore Destinations</span>
+              Explore Destinations
             </Link>
           </div>
         ) : (
-          /* Favorites Grid/List */
-          <div className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-              : 'space-y-6'
-          }>
-            {favoriteDestinations.map((city) => (
-              <div
-                key={city.id}
-                className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 ${
-                  viewMode === 'list' ? 'flex' : ''
-                }`}
-              >
-                <div className={viewMode === 'list' ? 'w-64 flex-shrink-0' : 'relative'}>
-                  <OptimizedImage
-                    src={city.featuredImage}
-                    alt={city.name}
-                    className={`object-cover ${
-                      viewMode === 'list' ? 'w-full h-48' : 'w-full h-48'
-                    }`}
-                  />
-                  
-                  {/* Favorite Button */}
+          <>
+            {/* Filters and Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-500">
+                  {favoritePlaces.length} {favoritePlaces.length === 1 ? 'destination' : 'destinations'}
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => handleRemoveFavorite(city.id, city.name)}
-                    className="absolute top-3 right-3 p-2 bg-white bg-opacity-90 backdrop-blur-sm rounded-full hover:bg-opacity-100 transition-all duration-200 group"
-                    title="Remove from favorites"
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-orange-100 text-orange-600' : 'text-gray-400 hover:text-gray-500'}`}
+                    title="Grid view"
                   >
-                    <HeartSolidIcon className="h-5 w-5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-orange-100 text-orange-600' : 'text-gray-400 hover:text-gray-500'}`}
+                    title="List view"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </div>
-
-                <div className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{city.name}</h3>
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <MapPinIcon className="h-4 w-4 mr-1" />
-                        <span>{city.state}</span>
+                
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md"
+                >
+                  <option value="name">Sort by Name</option>
+                  <option value="dateAdded">Sort by Date Added</option>
+                  <option value="rating">Sort by Rating</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Destinations Grid/List */}
+            <div className={
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'space-y-6'
+            }>
+              {favoritePlaces.map((place) => (
+                <div
+                  key={place.id}
+                  className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 ${
+                    viewMode === 'list' ? 'flex' : ''
+                  }`}
+                >
+                  <div className={viewMode === 'list' ? 'w-64 flex-shrink-0' : 'relative'}>
+                    <OptimizedImage
+                      src={place.image_url}
+                      alt={place.name}
+                      className={`object-cover ${
+                        viewMode === 'list' ? 'w-full h-48' : 'w-full h-48'
+                      }`}
+                    />
+                    <button
+                      onClick={() => handleRemoveFavorite(place.id, place.name)}
+                      className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors duration-200"
+                      aria-label="Remove from favorites"
+                    >
+                      <HeartSolidIcon className="w-5 h-5 text-red-500" />
+                    </button>
+                  </div>
+                  
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">{place.name}</h3>
+                      <div className="flex items-center space-x-1">
+                        <StarIcon className="w-4 h-4 text-yellow-400" />
+                        <span className="text-sm text-gray-600">{place.rating}</span>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <StarIcon className="h-4 w-4 text-yellow-500 fill-current" />
-                      <span className="text-sm text-gray-600 ml-1">4.8</span>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {city.description}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                      {city.attractions.length} attractions
+                    
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{place.description}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        {place.state}
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {place.category}
+                      </span>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleShare(city)}
-                        className="p-2 text-gray-400 hover:text-orange-500 transition-colors duration-200"
-                        title="Share destination"
-                      >
-                        <ShareIcon className="h-4 w-4" />
-                      </button>
+                    <div className="flex items-center text-sm text-gray-500 mb-4">
+                      <MapPinIcon className="w-4 h-4 mr-1" />
+                      <span>{place.location}</span>
+                    </div>
+                    
+                    <div className="mt-auto flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-gray-500">Starting from</p>
+                        <p className="text-lg font-bold text-orange-500">₹{place.entry_fee}</p>
+                      </div>
                       
-                      <Link
-                        to={`/city/${city.id}`}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                      >
-                        Explore
-                      </Link>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handleRemoveFavorite(place.id, place.name)}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                          aria-label="Remove from favorites"
+                        >
+                          <HeartSolidIcon className="w-5 h-5" />
+                        </button>
+                        <button 
+                          className="p-2 text-gray-400 hover:text-orange-500 transition-colors duration-200"
+                          aria-label="Share"
+                        >
+                          <ShareIcon className="w-5 h-5" />
+                        </button>
+                        <button 
+                          className="p-2 text-gray-400 hover:text-orange-500 transition-colors duration-200"
+                          aria-label="View details"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        {favoriteDestinations.length > 0 && (
+              ))}
+            </div>
+          </>
+        )}  {/* Quick Actions */}
+        {favoritePlaces.length > 0 && (
           <div className="mt-12 text-center">
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Plan Your Trip</h3>

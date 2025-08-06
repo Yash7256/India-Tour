@@ -11,7 +11,7 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import InteractiveMap from '../components/InteractiveMap';
 import ReviewSystem from '../components/ReviewSystem';
@@ -379,7 +379,7 @@ const CityPage: React.FC = () => {
                   <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
                     <div className="text-center text-gray-600">
                       <MapPinIcon className="h-12 w-12 mx-auto mb-2" />
-                      <p>Click "Show Map" to view interactive map</p>
+                      <p>Click &quot;Show Map&quot; to view interactive map</p>
                       <p className="text-sm mt-2">Coordinates: {city.coordinates.lat}, {city.coordinates.lng}</p>
                     </div>
                   </div>

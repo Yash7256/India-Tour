@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPinIcon, CalendarIcon, StarIcon, ArrowRightIcon, PlayIcon } from '@heroicons/react/24/outline';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import OptimizedImage from '../components/OptimizedImage';
@@ -11,16 +11,16 @@ import { ErrorFallback } from '../components/ErrorBoundary';
 import { useToast } from '../components/Toast';
 
 const HomePage: React.FC = () => {
-  const { cities } = useData();
+  const { places, featuredPlaces, loading } = useData();
   const { getActiveNotifications } = useNotifications();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [_currentSlide, setCurrentSlide] = useState(0);
+  // Removed unused state variable
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const { success, error } = useToast();
   
-  const featuredCities = cities.slice(0, 6);
+  const featuredCities = featuredPlaces.slice(0, 6);
   
   // Simulate loading state
   useEffect(() => {
@@ -55,13 +55,6 @@ const HomePage: React.FC = () => {
   const activeNotifications = getActiveNotifications();
   const highPriorityNotifications = activeNotifications.filter(n => n.priority === 'high');
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [heroImages.length]);
-
   // Preload images
   useEffect(() => {
     heroImages.forEach((image) => {
@@ -80,7 +73,7 @@ const HomePage: React.FC = () => {
       } else {
         navigate('/destinations');
       }
-    } catch (err) {
+    } catch {
       error('Navigation Error', 'Unable to navigate to destinations. Please try again.');
     }
   };
@@ -89,7 +82,7 @@ const HomePage: React.FC = () => {
     try {
       window.open('https://www.youtube.com/watch?v=your-video-id', '_blank');
       success('Opening Video', 'Enjoy exploring India through our video tour!');
-    } catch (err) {
+    } catch {
       error('Video Error', 'Unable to open video. Please check your connection.');
     }
   };
@@ -197,7 +190,7 @@ const HomePage: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
             <div className="group">
               <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-200">
-                {cities.length}+
+                {places.length}+
               </div>
               <div className="text-sm sm:text-base text-gray-600 font-medium">Destinations</div>
             </div>
@@ -233,7 +226,7 @@ const HomePage: React.FC = () => {
               Featured Destinations
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-              Discover the most popular destinations that showcase India's incredible diversity and rich heritage
+              Discover the most popular destinations that showcase India&apos;s incredible diversity and rich heritage
             </p>
           </div>
 
@@ -247,7 +240,7 @@ const HomePage: React.FC = () => {
               >
                 <div className="relative overflow-hidden">
                   <OptimizedImage
-                    src={city.featuredImage}
+                    src={city.image_url}
                     alt={city.name}
                     className="w-full h-48 sm:h-64"
                     aspectRatio="photo"
@@ -259,8 +252,8 @@ const HomePage: React.FC = () => {
                   <div className="absolute bottom-4 left-4 right-4 text-white transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-lg">{city.attractions?.length || 0} Attractions</p>
-                        <p className="text-sm opacity-90">{city.bestTimeToVisit}</p>
+                        <p className="font-semibold text-lg">{city.features?.length || 0} Features</p>
+                        <p className="text-sm opacity-90">{city.best_time_to_visit}</p>
                       </div>
                       <ArrowRightIcon className="h-6 w-6 transform group-hover:translate-x-1 transition-transform duration-200" />
                     </div>
@@ -290,7 +283,7 @@ const HomePage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm text-gray-500">
                       <CalendarIcon className="h-4 w-4 mr-1" />
-                      <span>{city.bestTimeToVisit}</span>
+                      <span>{city.best_time_to_visit}</span>
                     </div>
                     <span className="text-orange-600 font-semibold group-hover:text-orange-700 transition-colors duration-200 flex items-center">
                       Explore 
@@ -300,7 +293,7 @@ const HomePage: React.FC = () => {
                 </div>
               </Link>
             )) : (
-              // Show skeleton loaders when no cities are available
+              // Show skeleton loaders when no places are available
               Array.from({ length: 6 }).map((_, index) => (
                 <DestinationCardSkeleton key={index} />
               ))
@@ -375,7 +368,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-              Experience India's Rich Culture
+              Experience India&apos;s Rich Culture
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               Immerse yourself in festivals, traditions, cuisine, and arts that make India truly incredible

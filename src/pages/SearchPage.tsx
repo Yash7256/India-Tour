@@ -118,7 +118,7 @@ const SearchPage: React.FC = () => {
         error('No Results', 'Try adjusting your search terms or filters');
       }
       
-    } catch (err) {
+    } catch {
       error('Search Error', 'Unable to perform search. Please try again.');
       setSearchResults([]);
     } finally {

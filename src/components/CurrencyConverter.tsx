@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 interface CurrencyConverterProps {
@@ -27,7 +27,7 @@ const CurrencyConverter: React.FC<CurrencyConverterProps> = ({ className = '' })
   ];
 
   // Mock exchange rates (in a real app, you'd fetch from an API)
-  const mockExchangeRates: { [key: string]: { [key: string]: number } } = {
+  const mockExchangeRates = useMemo(() => ({
     USD: { INR: 83.12, EUR: 0.85, GBP: 0.73, JPY: 110.25, AUD: 1.35, CAD: 1.25, CNY: 6.45, SGD: 1.35, AED: 3.67 },
     EUR: { INR: 97.79, USD: 1.18, GBP: 0.86, JPY: 129.89, AUD: 1.59, CAD: 1.47, CNY: 7.60, SGD: 1.59, AED: 4.33 },
     GBP: { INR: 113.84, USD: 1.37, EUR: 1.16, JPY: 151.14, AUD: 1.85, CAD: 1.71, CNY: 8.84, SGD: 1.85, AED: 5.04 },
@@ -38,9 +38,9 @@ const CurrencyConverter: React.FC<CurrencyConverterProps> = ({ className = '' })
     CNY: { INR: 12.89, USD: 0.16, EUR: 0.13, GBP: 0.11, JPY: 17.09, AUD: 0.21, CAD: 0.19, SGD: 0.21, AED: 0.57 },
     SGD: { INR: 61.57, USD: 0.74, EUR: 0.63, GBP: 0.54, JPY: 81.67, AUD: 1.00, CAD: 0.93, CNY: 4.78, AED: 2.72 },
     AED: { INR: 22.64, USD: 0.27, EUR: 0.23, GBP: 0.20, JPY: 30.07, AUD: 0.37, CAD: 0.34, CNY: 1.76, SGD: 0.37 }
-  };
+  }), []);
 
-  const convertCurrency = () => {
+  const convertCurrency = useCallback(() => {
     if (!amount || isNaN(parseFloat(amount))) {
       setConvertedAmount('');
       return;
@@ -56,7 +56,7 @@ const CurrencyConverter: React.FC<CurrencyConverterProps> = ({ className = '' })
       setExchangeRate(rate);
       setLoading(false);
     }, 500);
-  };
+  }, [amount, fromCurrency, toCurrency, mockExchangeRates]);
 
   const swapCurrencies = () => {
     setFromCurrency(toCurrency);
@@ -68,9 +68,8 @@ const CurrencyConverter: React.FC<CurrencyConverterProps> = ({ className = '' })
     if (amount && fromCurrency && toCurrency) {
       convertCurrency();
     }
-  }, [amount, fromCurrency, toCurrency]);
+  }, [amount, fromCurrency, toCurrency, convertCurrency]);
 
-  const fromCurrencyInfo = currencies.find(c => c.code === fromCurrency);
   const toCurrencyInfo = currencies.find(c => c.code === toCurrency);
 
   return (

@@ -28,8 +28,7 @@ interface InteractiveMapProps {
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({
   locations,
-  center = { lat: 20.5937, lng: 78.9629 }, // Center of India
-  zoom = 5,
+  // Removed unused center and zoom variables
   height = '400px',
   showControls = true,
   onLocationClick,

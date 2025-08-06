@@ -9,7 +9,7 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 
 const UserProfile: React.FC = () => {
   const { user, updateProfile, signOut } = useAuth();

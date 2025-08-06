@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MagnifyingGlassIcon, BellIcon, UserIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { useData } from '../context/DataContext.old';
+import { useData } from '../context/DataContext';
 import AuthModal from './AuthModal';
 import NotificationPanel from './NotificationPanel';
 import ProfileEditModal from './ProfileEditModal';
@@ -11,7 +11,7 @@ import ProfileEditModal from './ProfileEditModal';
 const Header: React.FC = () => {
   const { user, signOut, loading } = useAuth();
   const { getUnreadCount } = useNotifications();
-  const { searchCities } = useData();
+  const { searchPlaces } = useData();
   const navigate = useNavigate();
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -24,10 +24,10 @@ const Header: React.FC = () => {
 
   const unreadCount = getUnreadCount();
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.length > 2) {
-      const results = searchCities(query);
+      const results = await searchPlaces(query);
       setSearchResults(results);
     } else {
       setSearchResults([]);

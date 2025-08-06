@@ -31,13 +31,13 @@ interface ReviewSystemProps {
   reviews: Review[];
   averageRating: number;
   totalReviews: number;
-  onSubmitReview?: (review: Omit<Review, 'id' | 'date' | 'helpful' | 'notHelpful'>) => void;
+  onSubmitReview?: (review: Review) => void;
   onHelpfulClick?: (reviewId: string, isHelpful: boolean) => void;
   className?: string;
 }
 
 const ReviewSystem: React.FC<ReviewSystemProps> = ({
-  destinationId: _destinationId,
+  // destinationId is not used in this component
   destinationName,
   reviews,
   averageRating,
@@ -93,7 +93,22 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      onSubmitReview?.(newReview);
+      const review: Review = {
+        id: Math.random().toString(36).substr(2, 9),
+        rating: newReview.rating,
+        title: newReview.title,
+        content: newReview.content,
+        userName: user?.full_name || 'Anonymous',
+        userId: user?.id || '',
+        userAvatar: user?.avatar_url || '',
+        verified: true, // Assuming verified since they're logged in
+        images: newReview.images,
+        date: new Date().toISOString(),
+        helpful: 0,
+        notHelpful: 0,
+      };
+      
+      onSubmitReview?.(review);
       
       success('Review Submitted', 'Thank you for your feedback!');
       setShowReviewForm(false);
@@ -107,7 +122,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
         verified: false,
         images: []
       });
-    } catch (err) {
+    } catch {
       error('Submission Failed', 'Unable to submit review. Please try again.');
     } finally {
       setIsSubmitting(false);
