@@ -40,7 +40,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose }) 
           setSuccess('');
         }, 1500);
       }
-    } catch {
+    } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);

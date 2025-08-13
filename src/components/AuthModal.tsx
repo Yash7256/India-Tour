@@ -44,7 +44,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           setError('Please check your email to confirm your account.');
         }
       }
-    } catch {
+    } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -55,8 +55,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       setIsLoading(true);
       await signInWithGoogle();
-    } catch (_err: any) {
-      setError(_err.message || 'Google sign-in failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
       setIsLoading(false);
     }
   };

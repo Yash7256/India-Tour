@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -33,6 +31,7 @@ export interface Database {
           travel_preferences: any;
           phone: string | null;
           location: string | null;
+          role: string;
         };
         Insert: {
           id: string;
@@ -43,6 +42,7 @@ export interface Database {
           travel_preferences?: any;
           phone?: string | null;
           location?: string | null;
+          role?: string;
         };
         Update: {
           id?: string;
@@ -53,6 +53,7 @@ export interface Database {
           travel_preferences?: any;
           phone?: string | null;
           location?: string | null;
+          role?: string;
         };
       };
       itineraries: {

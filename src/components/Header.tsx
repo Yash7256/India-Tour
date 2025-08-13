@@ -11,7 +11,7 @@ import ProfileEditModal from './ProfileEditModal';
 const Header: React.FC = () => {
   const { user, signOut, loading } = useAuth();
   const { getUnreadCount } = useNotifications();
-  const { searchPlaces } = useData();
+  const { searchCities } = useData();
   const navigate = useNavigate();
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -24,10 +24,10 @@ const Header: React.FC = () => {
 
   const unreadCount = getUnreadCount();
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
     if (query.length > 2) {
-      const results = await searchPlaces(query);
+      const results = searchCities(query);
       setSearchResults(results);
     } else {
       setSearchResults([]);
@@ -165,6 +165,16 @@ const Header: React.FC = () => {
                         <HeartIcon className="h-4 w-4" />
                         <span>View Profile</span>
                       </Link>
+                      {user.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <span>⚙️</span>
+                          <span>Admin Panel</span>
+                        </Link>
+                      )}
                       <hr className="my-2" />
                       <button
                         onClick={handleSignOut}

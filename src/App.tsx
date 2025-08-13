@@ -1,27 +1,18 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
-import { DataProvider } from './context/DataContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import ErrorBoundary from './components/ErrorBoundary';
-import { ToastContainer, useToast } from './components/Toast';
 import Header from './components/Header';
-import Footer from './components/Footer';
-import BackToTop from './components/BackToTop';
 import HomePage from './pages/HomePage';
 import CityPage from './pages/CityPage';
-import DestinationsPage from './pages/DestinationsPage';
 import UserProfile from './pages/UserProfile';
-import SearchPage from './pages/SearchPage';
-import FavoritesPage from './pages/FavoritesPage';
-import PlacesAdmin from './components/admin/PlacesAdmin';
+import AdminPage from './pages/AdminPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
+import { NotificationProvider } from './context/NotificationContext';
 import './App.css';
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { loading: authLoading } = useAuth();
-  const { toasts, removeToast } = useToast();
 
   useEffect(() => {
     // Simulate initial data loading
@@ -48,51 +39,31 @@ function AppContent() {
   }
 
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <DataProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <Router>
-                <div className="min-h-screen bg-gray-50 flex flex-col">
-                  <Header />
-                  <main className="flex-1">
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      <Route path="/city/:cityId" element={<CityPage />} />
-                      <Route path="/destinations" element={<DestinationsPage />} />
-                      <Route path="/profile" element={<UserProfile />} />
-                      <Route path="/search" element={<SearchPage />} />
-                      <Route path="/favorites" element={<FavoritesPage />} />
-                      <Route path="/admin/places" element={<PlacesAdmin />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                  <BackToTop />
-                </div>
-                <ToastContainer toasts={toasts} onClose={removeToast} />
-              </Router>
-            </NotificationProvider>
-          </AuthProvider>
-        </DataProvider>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <DataProvider>
+      <NotificationProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Header />
+            <main>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/city/:cityId" element={<CityPage />} />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/admin" element={<AdminPage />} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </NotificationProvider>
+    </DataProvider>
   );
 }
 
 function App() {
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <DataProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <AppContent />
-            </NotificationProvider>
-          </AuthProvider>
-        </DataProvider>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
