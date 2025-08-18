@@ -15,6 +15,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// JSON type for Supabase
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 // Database types
 export interface Database {
   public: {
@@ -85,6 +88,83 @@ export interface Database {
           start_date?: string;
           end_date?: string;
           is_public?: boolean;
+        };
+      };
+      places: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          name: string;
+          description: string | null;
+          location: string;
+          state: string | null;
+          country: string;
+          latitude: number | null;
+          longitude: number | null;
+          category: string | null;
+          rating: number | null;
+          price_range: string | null;
+          best_time_to_visit: string | null;
+          duration: string | null;
+          image_url: string | null;
+          images: string[] | null;
+          features: string[] | null;
+          contact_info: Json | null;
+          opening_hours: Json | null;
+          entry_fee: number | null;
+          is_featured: boolean;
+          is_active: boolean;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          name: string;
+          description?: string | null;
+          location: string;
+          state?: string | null;
+          country?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          category?: string | null;
+          rating?: number | null;
+          price_range?: string | null;
+          best_time_to_visit?: string | null;
+          duration?: string | null;
+          image_url?: string | null;
+          images?: string[] | null;
+          features?: string[] | null;
+          contact_info?: Json | null;
+          opening_hours?: Json | null;
+          entry_fee?: number | null;
+          is_featured?: boolean;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          name?: string;
+          description?: string | null;
+          location?: string;
+          state?: string | null;
+          country?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          category?: string | null;
+          rating?: number | null;
+          price_range?: string | null;
+          best_time_to_visit?: string | null;
+          duration?: string | null;
+          image_url?: string | null;
+          images?: string[] | null;
+          features?: string[] | null;
+          contact_info?: Json | null;
+          opening_hours?: Json | null;
+          entry_fee?: number | null;
+          is_featured?: boolean;
+          is_active?: boolean;
         };
       };
       reviews: {
