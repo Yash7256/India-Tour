@@ -46,49 +46,135 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to handle post-login redirect
+  const handlePostLoginRedirect = (userRole: string) => {
+    console.log('🔄 Handling post-login redirect for role:', userRole);
+    
+    // Check if user is admin and redirect accordingly
+    if (userRole === 'admin') {
+      console.log('👑 Admin user detected, redirecting to admin panel');
+      window.location.href = '/admin';
+    } else {
+      console.log('👤 Regular user, redirecting to home');
+      window.location.href = '/';
+    }
+  };
+
   useEffect(() => {
+    console.log('🚀 AuthProvider useEffect started');
+    
+    // Fallback timeout to prevent infinite loading
+    const fallbackTimeout = setTimeout(() => {
+      console.log('⏰ Fallback timeout triggered - setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+    
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('📱 Initial session check:', { session: !!session, error });
+      
       setSession(session);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        console.log('👤 User found in session, fetching profile...');
+        fetchUserProfile(session.user.id, false).then(() => { // false = don't redirect on initial load
+          clearTimeout(fallbackTimeout);
+        });
       } else {
+        console.log('❌ No user in session, setting loading to false');
         setLoading(false);
+        clearTimeout(fallbackTimeout);
       }
+    }).catch(error => {
+      console.error('💥 Error getting initial session:', error);
+      setLoading(false);
+      clearTimeout(fallbackTimeout);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔔 Auth state changed:', { event, session: !!session });
       setSession(session);
       
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
+      if (session?.user && event === 'SIGNED_IN') {
+        console.log('👤 User signed in, fetching profile and redirecting...');
+        await fetchUserProfile(session.user.id, true); // true = redirect after profile fetch
+        clearTimeout(fallbackTimeout);
+      } else if (session?.user) {
+        console.log('👤 User in auth state change, fetching profile...');
+        await fetchUserProfile(session.user.id, false); // false = don't redirect
+        clearTimeout(fallbackTimeout);
       } else {
+        console.log('❌ No user in auth state change, clearing user and setting loading to false');
         setUser(null);
         setLoading(false);
+        clearTimeout(fallbackTimeout);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 AuthProvider cleanup');
+      clearTimeout(fallbackTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, shouldRedirect: boolean = false) => {
+    console.log('🔍 fetchUserProfile called for userId:', userId, 'shouldRedirect:', shouldRedirect);
+    console.log('⏳ Current loading state before fetch:', loading);
+    
     try {
-      const { data: profile, error } = await supabase
+      // Add timeout to the database query
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+      });
+      
+      const { data: profile, error } = await Promise.race([
+        profilePromise,
+        timeoutPromise
+      ]).catch(err => {
+        console.log('⏰ Profile fetch timed out or failed:', err);
+        return { data: null, error: err };
+      });
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
+      console.log('📊 Profile query result:', { profile: !!profile, error });
 
-      if (profile) {
-        setUser({
+      let userRole = 'user';
+
+      if (error || !profile) {
+        console.log('📝 No profile found or error, creating from auth user...');
+        
+        // Get user data from auth session
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        console.log('👤 Auth user data:', { authUser: !!authUser });
+        
+        if (authUser) {
+          console.log('✅ Creating user from auth data');
+          const userData = {
+            id: authUser.id,
+            email: authUser.email || '',
+            full_name: authUser.user_metadata?.full_name || null,
+            avatar_url: authUser.user_metadata?.avatar_url || null,
+            favoriteDestinations: [],
+            travel_preferences: {},
+            phone: null,
+            location: null,
+            created_at: authUser.created_at,
+            role: 'user',
+          };
+          setUser(userData);
+          userRole = userData.role;
+        }
+      } else {
+        console.log('✅ Profile found, setting user data');
+        const userData = {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
@@ -99,11 +185,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           location: profile.location,
           created_at: profile.created_at,
           role: profile.role || 'user',
-        });
+        };
+        setUser(userData);
+        userRole = userData.role;
+      }
+
+      // Handle redirect if needed (but add a delay to ensure session is stable)
+      if (shouldRedirect) {
+        setTimeout(() => {
+          handlePostLoginRedirect(userRole);
+        }, 1000); // 1 second delay
       }
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      console.error('💥 Unexpected error in fetchUserProfile:', error);
+      
+      // Even on error, try to create user from auth data
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const userData = {
+            id: authUser.id,
+            email: authUser.email || '',
+            full_name: authUser.user_metadata?.full_name || null,
+            avatar_url: authUser.user_metadata?.avatar_url || null,
+            favoriteDestinations: [],
+            travel_preferences: {},
+            phone: null,
+            location: null,
+            created_at: authUser.created_at,
+            role: 'user',
+          };
+          setUser(userData);
+          
+          if (shouldRedirect) {
+            handlePostLoginRedirect(userData.role);
+          }
+        }
+      } catch (fallbackError) {
+        console.error('💥 Even auth user fetch failed:', fallbackError);
+      }
     } finally {
+      console.log('🏁 fetchUserProfile finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -112,7 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}`, // Keep it simple for now
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -126,10 +248,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (!error && data.user) {
+      // Fetch profile and redirect
+      await fetchUserProfile(data.user.id, true);
+    }
 
     return { error };
   };
@@ -155,6 +282,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       setUser(null);
       setSession(null);
+      // Redirect to home page after sign out
+      window.location.href = '/';
     }
   };
 
@@ -189,6 +318,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedFavorites = user.favoriteDestinations.filter(id => id !== cityId);
     await updateProfile({ favorite_destinations: updatedFavorites });
   };
+
+  console.log('🎨 AuthProvider rendering with loading:', loading);
 
   return (
     <AuthContext.Provider value={{
