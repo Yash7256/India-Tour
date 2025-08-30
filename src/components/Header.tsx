@@ -1,6 +1,19 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MagnifyingGlassIcon, BellIcon, UserIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  MagnifyingGlassIcon, 
+  BellIcon, 
+  UserIcon, 
+  HeartIcon, 
+  ChevronDownIcon, 
+  Bars3Icon, 
+  XMarkIcon,
+  HomeIcon,
+  MapPinIcon,
+  CameraIcon,
+  InformationCircleIcon,
+  PhoneIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
@@ -13,22 +26,67 @@ const Header: React.FC = () => {
   const { getUnreadCount } = useNotifications();
   const { searchCities } = useData();
   const navigate = useNavigate();
+  const location = useLocation();
+  const headerRef = useRef<HTMLElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [isProfileEditModalOpen, setIsProfileEditModalOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const unreadCount = getUnreadCount();
 
-  const handleSearch = (query: string) => {
+  // ChaiCode-inspired navigation items with icons
+  const navigationItems = [
+    { 
+      name: 'Home', 
+      href: '/', 
+      current: location.pathname === '/',
+      icon: HomeIcon
+    },
+    { 
+      name: 'Destinations', 
+      href: '/destinations', 
+      current: location.pathname === '/destinations',
+      icon: MapPinIcon
+    },
+    { 
+      name: 'Gallery', 
+      href: '/gallery', 
+      current: location.pathname === '/gallery',
+      icon: CameraIcon
+    },
+    { 
+      name: 'About', 
+      href: '/about', 
+      current: location.pathname === '/about',
+      icon: InformationCircleIcon
+    },
+    { 
+      name: 'Contact', 
+      href: '/contact', 
+      current: location.pathname === '/contact',
+      icon: PhoneIcon
+    }
+  ];
+
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.length > 2) {
-      const results = searchCities(query);
-      setSearchResults(results);
+      try {
+        const results = await searchCities(query);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Error searching cities:', error);
+        setSearchResults([]);
+      }
     } else {
       setSearchResults([]);
     }
@@ -41,66 +99,253 @@ const Header: React.FC = () => {
     setIsSearchFocused(false);
   };
 
+  // Close mobile menu when location changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
+  // Add scroll effect for header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+      if (headerRef.current && !headerRef.current.querySelector('.user-menu')?.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     setShowUserDropdown(false);
   };
 
-  return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo with Text Side by Side */}
-          <Link to="/" className="flex items-center space-x-4 hover:opacity-90 transition-opacity">
-            {/* Logo */}
-            <img 
-              src="/images/logo.png" 
-              alt="India Tour Logo" 
-              className="h-20 w-auto"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            {/* Text next to logo */}
-            <div className="flex flex-col justify-center">
-              <h1 className="text-3xl font-bold text-black tracking-tight">INDIA TOUR</h1>
-              <p className="text-sm text-orange-600 font-medium mt-1">Incredible India</p>
-            </div>
-          </Link>
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-8 relative">
+  return (
+    <>
+      <header 
+        ref={headerRef}
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-white/95 backdrop-blur-md shadow-lg' 
+            : 'bg-white shadow-sm'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto pl-2 pr-4 sm:pl-2 sm:pr-6 lg:pl-2 lg:pr-8">
+          <div className="flex justify-start items-center h-16">
+            
+            {/* Logo and Brand - Maximum Left Aligned */}
+            <div className="flex items-center mr-auto">
+              <Link to="/" className="flex items-center space-x-3 hover:opacity-90 transition-opacity group">
+                <div className="relative">
+                  <img 
+                    src="/images/logo.png" 
+                    alt="India Tour Logo" 
+                    className="h-12 w-12 group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg hidden items-center justify-center">
+                    <span className="text-white font-bold text-lg">IT</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight">INDIA</span>
+                  <span className="text-2xl font-bold text-orange-600 tracking-tight">TOUR</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* Right Side Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Desktop Navigation - ChaiCode Style Pills */}
+              <nav className="hidden xl:flex items-center space-x-2">
+                {navigationItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-50 ${
+                        item.current 
+                          ? 'text-orange-600 bg-orange-50' 
+                          : 'text-gray-700 hover:text-orange-600'
+                      }`}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Notifications */}
+              <button
+                onClick={() => setIsNotificationPanelOpen(true)}
+                className="relative p-2 text-gray-600 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
+              >
+                <BellIcon className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* User Menu */}
+              {user ? (
+                <div className="flex items-center space-x-3 relative">
+                  <Link
+                    to="/profile"
+                    className="p-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-all duration-200"
+                    title="Wishlist"
+                  >
+                    <HeartIcon className="h-5 w-5" />
+                  </Link>
+                  
+                  <div className="relative user-menu">
+                    <button
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="flex items-center space-x-2 hover:bg-gray-50 rounded-xl px-3 py-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <img
+                        src={user.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                        alt={user.full_name || 'User'}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                      />
+                      <ChevronDownIcon className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* User Dropdown */}
+                    {showUserDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
+                          <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setIsProfileEditModalOpen(true);
+                            setShowUserDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <UserIcon className="h-4 w-4" />
+                          <span>Edit Profile</span>
+                        </button>
+                        <Link
+                          to="/profile"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <HeartIcon className="h-4 w-4" />
+                          <span>My Wishlist</span>
+                        </Link>
+                        {user.role === 'admin' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setShowUserDropdown(false)}
+                            className="block px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 transition-colors duration-200 flex items-center space-x-2"
+                          >
+                            <span className="w-4 h-4 bg-purple-600 rounded text-white text-xs flex items-center justify-center">A</span>
+                            <span>Admin Panel</span>
+                          </Link>
+                        )}
+                        <hr className="my-2" />
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : !loading ? (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-6 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                >
+                  Login
+                </button>
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              )}
+
+              {/* Mobile/Tablet menu button - ChaiCode Style */}
+              <button
+                onClick={toggleMobileMenu}
+                className="xl:hidden p-2 text-gray-600 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
+              >
+                {mobileMenuOpen ? (
+                  <XMarkIcon className="h-6 w-6" />
+                ) : (
+                  <Bars3Icon className="h-6 w-6" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Search Bar */}
+        {isSearchFocused && (
+          <div className="lg:hidden border-t border-gray-200 bg-white px-4 py-3">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search cities, attractions..."
+                placeholder="Search destinations..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 text-sm"
+                autoFocus
               />
             </div>
             
-            {/* Search Results */}
-            {isSearchFocused && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-80 overflow-y-auto">
+            {/* Mobile Search Results */}
+            {searchResults.length > 0 && (
+              <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
                 {searchResults.map((city) => (
                   <button
                     key={city.id}
                     onClick={() => handleCitySelect(city.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center space-x-3 transition-colors duration-150"
+                    className="w-full text-left px-3 py-3 hover:bg-gray-50 rounded-xl flex items-center space-x-3 transition-colors duration-150"
                   >
                     <img
                       src={city.featuredImage}
                       alt={city.name}
-                      className="w-12 h-12 rounded-lg object-cover"
+                      className="w-10 h-10 rounded-lg object-cover"
                     />
                     <div>
-                      <h4 className="font-semibold text-gray-900">{city.name}</h4>
+                      <h4 className="font-medium text-gray-900">{city.name}</h4>
                       <p className="text-sm text-gray-600">{city.state}</p>
                     </div>
                   </button>
@@ -108,108 +353,131 @@ const Header: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+      </header>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <button
-              onClick={() => setIsNotificationPanelOpen(true)}
-              className="relative p-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
-            >
-              <BellIcon className="h-6 w-6" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center festival-animation">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* User Menu */}
-            {user ? (
-              <div className="flex items-center space-x-3 relative">
-                <Link
-                  to="/profile"
-                  className="p-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
-                >
-                  <HeartIcon className="h-6 w-6" />
-                </Link>
+      {/* ChaiCode-Style Slide-out Navigation Menu */}
+      {mobileMenuOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 xl:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          
+          {/* Slide-out Menu */}
+          <div 
+            ref={mobileMenuRef}
+            className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-out xl:hidden ${
+              mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            {/* Menu Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <button
-                    onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
+                  <img 
+                    src="/images/logo.png" 
+                    alt="India Tour Logo" 
+                    className="h-10 w-10"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg hidden items-center justify-center">
+                    <span className="text-white font-bold">IT</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-xl font-bold text-gray-900">INDIA</span>
+                  <span className="text-xl font-bold text-orange-600">TOUR</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors duration-200"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Navigation Items */}
+            <div className="px-6 py-4">
+              <nav className="space-y-2">
+                {navigationItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                        item.current 
+                          ? 'text-orange-600 bg-orange-50' 
+                          : 'text-gray-700 hover:text-orange-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <IconComponent className="h-5 w-5" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+              {user && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex items-center space-x-3 px-4 py-3">
                     <img
                       src={user.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=100'}
                       alt={user.full_name || 'User'}
-                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                     />
-                    <span className="hidden md:block text-sm font-medium text-gray-700">
-                      {user.full_name || user.email.split('@')[0]}
-                    </span>
-                    <ChevronDownIcon className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* User Dropdown */}
-                  {showUserDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{user.full_name || 'User'}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setIsProfileEditModalOpen(true);
-                          setShowUserDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
-                      >
-                        <UserIcon className="h-4 w-4" />
-                        <span>Edit Profile</span>
-                      </button>
-                      <Link
-                        to="/profile"
-                        onClick={() => setShowUserDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
-                      >
-                        <HeartIcon className="h-4 w-4" />
-                        <span>View Profile</span>
-                      </Link>
-                      {user.role === 'admin' && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setShowUserDropdown(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
-                        >
-                          <span>⚙️</span>
-                          <span>Admin Panel</span>
-                        </Link>
-                      )}
-                      <hr className="my-2" />
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
-                      >
-                        <span>🚪</span>
-                        <span>Sign Out</span>
-                      </button>
+                    <div>
+                      <p className="font-medium text-gray-900">{user.full_name || 'User'}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
-                  )}
+                  </div>
+                  
+                  <div className="mt-4 space-y-1">
+                    <button
+                      onClick={() => {
+                        setIsProfileEditModalOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                    >
+                      Edit Profile
+                    </button>
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                    >
+                      My Wishlist
+                    </Link>
+                    {user.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 mt-2"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : !loading ? (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105"
-              >
-                <UserIcon className="h-5 w-5" />
-                <span className="hidden md:block">Sign In</span>
-              </button>
-            ) : (
-              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Auth Modal */}
       <AuthModal
@@ -229,14 +497,14 @@ const Header: React.FC = () => {
         onClose={() => setIsProfileEditModalOpen(false)}
       />
 
-      {/* Click outside to close dropdown */}
+      {/* Overlay for dropdowns */}
       {showUserDropdown && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowUserDropdown(false)}
         />
       )}
-    </header>
+    </>
   );
 };
 

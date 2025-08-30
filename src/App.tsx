@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import CityPage from './pages/CityPage';
 import UserProfile from './pages/UserProfile';
 import AdminPage from './pages/AdminPage';
+import Destinations from './pages/Destinations';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -42,16 +44,18 @@ function AppContent() {
     <DataProvider>
       <NotificationProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
-            <main>
+            <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/destinations" element={<Destinations />} />
                 <Route path="/city/:cityId" element={<CityPage />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>
             </main>
+            <Footer />
           </div>
         </Router>
       </NotificationProvider>

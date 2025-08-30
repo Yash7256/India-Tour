@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Place } from '../types';
 
 export interface City {
   id: string;
@@ -76,9 +77,14 @@ export interface Review {
 
 interface DataContextType {
   cities: City[];
+  places: Place[];
+  loading: boolean;
+  error: Error | null;
   getCityById: (id: string) => City | undefined;
-  searchCities: (query: string) => City[];
+  searchCities: (query: string) => Promise<Place[]>;
+  searchPlaces: (query: string) => Promise<Place[]>;
   addReview: (attractionId: string, cityId: string, review: Omit<Review, 'id' | 'date'>) => void;
+  getPlaces: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -93,6 +99,9 @@ export const useData = () => {
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cities, setCities] = useState<City[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     fetchPlacesFromDatabase();
@@ -710,13 +719,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cities.find(city => city.id === id);
   };
 
-  const searchCities = (query: string) => {
-    if (!query) return cities;
-    return cities.filter(city => 
-      city.name.toLowerCase().includes(query.toLowerCase()) ||
-      city.state.toLowerCase().includes(query.toLowerCase()) ||
-      city.description.toLowerCase().includes(query.toLowerCase())
+  const searchCities = async (query: string): Promise<Place[]> => {
+    if (!query.trim()) return [];
+    const lowercasedQuery = query.toLowerCase();
+    
+    // First search in local state
+    const localResults = places.filter(place => 
+      place.name.toLowerCase().includes(lowercasedQuery) ||
+      (place.city && place.city.toLowerCase().includes(lowercasedQuery)) ||
+      (place.state && place.state.toLowerCase().includes(lowercasedQuery))
     );
+
+    if (localResults.length > 0) {
+      return localResults;
+    }
+
+    // If no local results, try to fetch from API
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('places')
+        .select('*')
+        .or(`name.ilike.%${query}%,city.ilike.%${query}%,state.ilike.%${query}%`);
+      
+      if (error) throw error;
+      
+      // Update local state with new results
+      setPlaces(prev => [...prev, ...(data || []).filter(d => !prev.some(p => p.id === d.id))]);
+      
+      return data || [];
+    } catch (err) {
+      console.error('Error searching cities:', err);
+      setError(err instanceof Error ? err : new Error('Failed to search cities'));
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchPlaces = async (query: string): Promise<Place[]> => {
+    if (!query.trim()) return [];
+    const lowercasedQuery = query.toLowerCase();
+    
+    // First search in local state
+    const localResults = places.filter(
+      (place) =>
+        place.name.toLowerCase().includes(lowercasedQuery) ||
+        (place.city && place.city.toLowerCase().includes(lowercasedQuery)) ||
+        (place.state && place.state.toLowerCase().includes(lowercasedQuery)) ||
+        (place.category && place.category.toLowerCase().includes(lowercasedQuery))
+    );
+
+    if (localResults.length > 0) {
+      return localResults;
+    }
+
+    // If no local results, try to fetch from API
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('places')
+        .select('*')
+        .or(`name.ilike.%${query}%,city.ilike.%${query}%,state.ilike.%${query}%`);
+      
+      if (error) throw error;
+      
+      // Update local state with new results
+      setPlaces(prev => [...prev, ...(data || []).filter(d => !prev.some(p => p.id === d.id))]);
+      
+      return data || [];
+    } catch (err) {
+      console.error('Error searching places:', err);
+      setError(err instanceof Error ? err : new Error('Failed to search places'));
+      return [];
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addReview = (attractionId: string, cityId: string, review: Omit<Review, 'id' | 'date'>) => {
@@ -747,14 +825,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  // Function to fetch all places
+  const getPlaces = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('places')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      
+      setPlaces(data || []);
+    } catch (err) {
+      console.error('Error fetching places:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch places'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load places on component mount
+  useEffect(() => {
+    getPlaces();
+  }, []);
+
   return (
-    <DataContext.Provider value={{
-      cities,
-      getCityById,
-      searchCities,
-      addReview
+    <DataContext.Provider value={{ 
+      cities, 
+      places, 
+      loading, 
+      error,
+      getCityById, 
+      searchCities, 
+      searchPlaces,
+      addReview,
+      getPlaces
     }}>
       {children}
     </DataContext.Provider>
   );
 };
+
+export default DataProvider;
