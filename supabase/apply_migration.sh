@@ -12,11 +12,14 @@ PGPASSWORD="$DB_PASS"
 
 echo "Applying database migration..."
 
-# Apply the migration
-psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f supabase/migrations/20250830000001_improve_schema.sql
+# Apply migrations in order
+for migration in $(ls supabase/migrations/*.sql | sort); do
+    echo "Applying migration: $migration"
+    psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f "$migration"
+done
 
-# Verify the migration was applied
-echo "Migration completed. Verifying changes..."
+# Verify the migrations were applied
+echo "Migrations completed. Verifying changes..."
 psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "\dt"
 
 echo "If you see your tables listed above, the migration was successful!"

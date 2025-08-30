@@ -5,11 +5,12 @@ import { useData } from '../context/DataContext';
 import { useNotifications } from '../context/NotificationContext';
 
 const HomePage: React.FC = () => {
-  const { cities } = useData();
+  const { places } = useData();
   const { getActiveNotifications } = useNotifications();
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  const featuredCities = cities.slice(0, 6);
+  // Group places by state for the featured section
+  const featuredPlaces = places.slice(0, 12); // Get first 12 places for featured section
   const heroImages = [
     'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=1920',
     'https://images.pexels.com/photos/2437299/pexels-photo-2437299.jpeg?auto=compress&cs=tinysrgb&w=1920',
@@ -119,54 +120,59 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredCities.map((city, index) => (
+            {featuredPlaces.map((place, index) => (
               <Link
-                key={city.id}
-                to={`/city/${city.id}`}
+                key={place.id}
+                to={`/city/${place.id}`}
                 className="group card-hover-effect"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="bg-white rounded-2xl overflow-hidden shadow-lg">
-                  <div className="relative overflow-hidden">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-lg h-full flex flex-col">
+                  <div className="relative overflow-hidden flex-shrink-0" style={{ height: '200px' }}>
                     <img
-                      src={city.featuredImage}
-                      alt={city.name}
-                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                      src={place.imageUrl || '/images/placeholder.jpg'}
+                      alt={place.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/placeholder.jpg';
+                      }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-70 transition-opacity duration-300"></div>
-                    <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold">{city.attractions.length} Attractions</p>
-                          <p className="text-sm opacity-90">{city.bestTimeToVisit}</p>
+                          <p className="font-semibold">{place.category || 'Tourist Attraction'}</p>
                         </div>
-                        <ArrowRightIcon className="h-6 w-6" />
+                        <ArrowRightIcon className="h-5 w-5" />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-6">
+                  <div className="p-6 flex flex-col flex-grow">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
                       <div className="flex items-center text-yellow-500">
                         <StarIcon className="h-5 w-5 fill-current" />
-                        <span className="text-sm text-gray-600 ml-1">4.5</span>
+                        <span className="text-sm text-gray-600 ml-1">{place.rating?.toFixed(1) || '4.5'}</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center text-gray-600 mb-3">
-                      <MapPinIcon className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{city.state}</span>
+                      <MapPinIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                      <span className="text-sm truncate">
+                        {place.city && `${place.city}, `}{place.state}
+                      </span>
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {city.description}
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
+                      {place.description || 'Explore this beautiful destination in India with rich cultural heritage and stunning attractions.'}
                     </p>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mt-auto pt-2">
                       <div className="flex items-center text-sm text-gray-500">
                         <CalendarIcon className="h-4 w-4 mr-1" />
-                        <span>{city.bestTimeToVisit}</span>
+                        <span>{place.bestTime || 'Year-round'}</span>
                       </div>
                       <span className="text-orange-600 font-semibold group-hover:text-orange-700 transition-colors duration-200">
                         Explore →

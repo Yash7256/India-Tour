@@ -80,6 +80,7 @@ interface DataContextType {
   places: Place[];
   loading: boolean;
   error: Error | null;
+  setPlaces: (places: Place[]) => void;
   getCityById: (id: string) => City | undefined;
   searchCities: (query: string) => Promise<Place[]>;
   searchPlaces: (query: string) => Promise<Place[]>;
@@ -99,9 +100,16 @@ export const useData = () => {
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cities, setCities] = useState<City[]>([]);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlacesState] = useState<Place[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+  
+  const setPlaces = (newPlaces: Place[]) => {
+    setPlacesState(newPlaces);
+    // Update cities when places change
+    const updatedCities = convertPlacesToCities(newPlaces);
+    setCities(updatedCities);
+  };
 
   useEffect(() => {
     fetchPlacesFromDatabase();
@@ -111,8 +119,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: places, error } = await supabase
         .from('places')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
 
       if (error) {
         console.error('Error fetching places:', error);
@@ -122,8 +129,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (places && places.length > 0) {
+        // Filter out places without a location and update places state
+        const validPlaces = places.filter(place => place.location);
+        setPlaces(validPlaces);
         // Convert database places to city format
-        const convertedCities = convertPlacesToCities(places);
+        const convertedCities = convertPlacesToCities(validPlaces);
         setCities(convertedCities);
       } else {
         // Initialize with sample data if no places in database
@@ -140,11 +150,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cityMap = new Map<string, City>();
 
     places.forEach(place => {
-      const cityKey = `${place.location}-${place.state}`;
+      // Skip if place doesn't have a location
+      if (!place.location) return;
+      
+      const cityKey = `${place.location}-${place.state || ''}`;
       
       if (!cityMap.has(cityKey)) {
         cityMap.set(cityKey, {
-          id: place.location.toLowerCase().replace(/\s+/g, '-'),
+          id: (place.location || '').toString().toLowerCase().replace(/\s+/g, '-'),
           name: place.location,
           state: place.state || '',
           description: `Explore the beautiful ${place.location} with its rich heritage and attractions.`,
@@ -850,18 +863,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getPlaces();
   }, []);
 
+
   return (
-    <DataContext.Provider value={{ 
-      cities, 
-      places, 
-      loading, 
-      error,
-      getCityById, 
-      searchCities, 
-      searchPlaces,
-      addReview,
-      getPlaces
-    }}>
+    <DataContext.Provider
+      value={{
+        cities,
+        places,
+        loading,
+        error,
+        setPlaces,
+        getCityById,
+        searchCities,
+        searchPlaces,
+        addReview,
+        getPlaces,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );
