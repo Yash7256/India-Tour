@@ -50,14 +50,23 @@ const Header: React.FC = () => {
     <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">IT</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold gradient-text">India Tour</h1>
-              <p className="text-xs text-gray-500 -mt-1">Incredible India</p>
+          {/* Logo with Text Side by Side */}
+          <Link to="/" className="flex items-center space-x-4 hover:opacity-90 transition-opacity">
+            {/* Logo */}
+            <img 
+              src="/images/logo.png" 
+              alt="India Tour Logo" 
+              className="h-20 w-auto"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            {/* Text next to logo */}
+            <div className="flex flex-col justify-center">
+              <h1 className="text-3xl font-bold text-black tracking-tight">INDIA TOUR</h1>
+              <p className="text-sm text-orange-600 font-medium mt-1">Incredible India</p>
             </div>
           </Link>
 
