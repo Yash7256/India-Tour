@@ -201,11 +201,26 @@ export default function Destinations() {
   };
 
   const filteredData = useMemo(() => {
-    if (!searchQuery || !searchQuery.trim()) return stateGroups;
+    // If we have a selected state, filter to only that state
+    let filteredStates = stateGroups;
+    
+    if (selectedState) {
+      filteredStates = stateGroups.filter(
+        stateGroup => {
+          // Convert both to lowercase for case-insensitive comparison
+          const stateName = stateGroup.state.toLowerCase();
+          const selectedStateName = selectedState.name.toLowerCase();
+          return stateName === selectedStateName;
+        }
+      );
+    }
+    
+    // Apply search query if present
+    if (!searchQuery || !searchQuery.trim()) return filteredStates;
     
     const query = searchQuery.toLowerCase().trim();
     
-    return stateGroups.map(stateGroup => ({
+    return filteredStates.map(stateGroup => ({
       ...stateGroup,
       cities: stateGroup.cities.filter(cityGroup => {
         // Search in city name
@@ -255,8 +270,8 @@ export default function Destinations() {
 
   // State selector component
   const StateSelector = () => {
-    // Get unique states from places data
-    const availableStates = Array.from(new Set(places.map(p => p.state).filter(Boolean)));
+    // Get the state name from the selectedState object if it exists
+    const selectedStateValue = selectedState?.id || '';
     
     return (
       <div className="mb-8">
@@ -265,14 +280,17 @@ export default function Destinations() {
         </label>
         <select
           id="state-select"
-          value={selectedState || ''}
-          onChange={(e) => selectState && selectState(e.target.value || null)}
+          value={selectedStateValue}
+          onChange={(e) => {
+            const stateId = e.target.value;
+            selectState?.(stateId || null);
+          }}
           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
         >
           <option value="">All States</option>
-          {availableStates.map((state) => (
-            <option key={state} value={state}>
-              {state}
+          {states.map((state) => (
+            <option key={state.id} value={state.id}>
+              {state.name}
             </option>
           ))}
         </select>
