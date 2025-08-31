@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useData } from '../context/DataContext';
 import { Place } from '../types';
 import { Link } from 'react-router-dom';
@@ -31,40 +31,114 @@ interface StateGroup {
 }
 
 export default function Destinations() {
-  const { places, loading, error } = useData();
+  const { 
+    places, 
+    loading, 
+    error, 
+    states, 
+    selectedState, 
+    selectState,
+    fetchStates 
+  } = useData();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [stateGroups, setStateGroups] = useState<StateGroup[]>([]);
   const [viewMode, setViewMode] = useState<'states' | 'cities'>('states');
 
+  // Fetch states when component mounts
+  const [hasFetchedStates, setHasFetchedStates] = useState(false);
+  
   useEffect(() => {
-    if (places && places.length > 0) {
-      // Filter places to only include Madhya Pradesh
-      const madhyaPradeshPlaces = places.filter(place => {
-        return place && place.state && place.state.toString().toLowerCase().includes('madhya pradesh');
-      });
+    if (fetchStates && !hasFetchedStates) {
+      fetchStates();
+      setHasFetchedStates(true);
+    }
+  }, [fetchStates, hasFetchedStates, places, states, selectedState]);
 
-      // Group places by state and then by city
-      const stateMap = madhyaPradeshPlaces.reduce<Record<string, Record<string, Place[]>>>((acc, place) => {
-        // Skip invalid places
-        if (!place || !place.state || !place.name) {
-          return acc;
-        }
+  useEffect(() => {
+    if (states && states.length > 0) {
+      // Create StateGroup array directly from states
+      const stateGroupsData = states.map(state => {
+        // Get places for this state
+        const statePlaces = places?.filter(place => 
+          place?.state && 
+          place.state.toString().toLowerCase() === state.name.toLowerCase()
+        ) || [];
         
-        const stateName = 'Madhya Pradesh'; // Force state name to be consistent
+        // Group places by city
+        const cityMap = statePlaces.reduce<Record<string, Place[]>>((acc, place) => {
+          if (!place || !place.city) return acc;
+          
+          const cityName = place.city.toString() || 'Unknown City';
+          if (!acc[cityName]) {
+            acc[cityName] = [];
+          }
+          acc[cityName].push(place);
+          return acc;
+        }, {});
+        
+        // Create city groups
+        const cities: CityGroup[] = Object.entries(cityMap).map(([city, cityPlaces]) => {
+          // Calculate average rating for city
+          const ratingsSum = cityPlaces
+            .filter(place => place.rating && !isNaN(place.rating))
+            .reduce((sum, place) => sum + (place.rating || 0), 0);
+          const validRatings = cityPlaces.filter(place => place.rating && !isNaN(place.rating)).length;
+          const averageRating = validRatings > 0 ? ratingsSum / validRatings : 0;
+          
+          // Get featured place for city
+          const featuredPlace = cityPlaces.reduce((best, current) => {
+            const bestRating = best.rating || 0;
+            const currentRating = current.rating || 0;
+            return currentRating > bestRating ? current : best;
+          }, cityPlaces[0]);
+          
+          return {
+            city,
+            places: cityPlaces.sort((a, b) => {
+              const nameA = a.name?.toString() || '';
+              const nameB = b.name?.toString() || '';
+              return nameA.localeCompare(nameB);
+            }),
+            averageRating,
+            totalDestinations: cityPlaces.length,
+            featuredPlace
+          };
+        }).sort((a, b) => a.city.localeCompare(b.city));
+        
+        // Calculate state-level statistics
+        const allPlaces = cities.flatMap(city => city.places);
+        const stateRatingsSum = allPlaces
+          .filter(place => place.rating && !isNaN(place.rating))
+          .reduce((sum, place) => sum + (place.rating || 0), 0);
+        const validStateRatings = allPlaces.filter(place => place.rating && !isNaN(place.rating)).length;
+        const stateAverageRating = validStateRatings > 0 ? stateRatingsSum / validStateRatings : 0;
+        
+        return {
+          state: state.name,
+          cities,
+          totalPlaces: allPlaces.length,
+          averageRating: stateAverageRating,
+          isExpanded: false
+        };
+      }).sort((a, b) => a.state.localeCompare(b.state));
+      
+      setStateGroups(stateGroupsData);
+    } else if (places && places.length > 0) {
+      // Fallback to old method if states are not available
+      const stateMap = places.reduce<Record<string, Record<string, Place[]>>>((acc, place) => {
+        if (!place || !place.state || !place.name) return acc;
+        
+        const stateName = place.state.toString();
         const cityName = place.city?.toString() || 'Unknown City';
         
-        if (!acc[stateName]) {
-          acc[stateName] = {};
-        }
-        if (!acc[stateName][cityName]) {
-          acc[stateName][cityName] = [];
-        }
+        if (!acc[stateName]) acc[stateName] = {};
+        if (!acc[stateName][cityName]) acc[stateName][cityName] = [];
         
         acc[stateName][cityName].push(place);
         return acc;
       }, {});
-
-      // Convert to StateGroup array
+      
       const stateGroupsData = Object.entries(stateMap).map(([state, cityMap]) => {
         // Create city groups
         const cities: CityGroup[] = Object.entries(cityMap).map(([city, cityPlaces]) => {
@@ -179,7 +253,41 @@ export default function Destinations() {
     });
   }, [allCities, searchQuery]);
 
-  if (error) return <div className="text-red-500 p-4">Error loading destinations: {error.message}</div>;
+  // State selector component
+  const StateSelector = () => {
+    // Get unique states from places data
+    const availableStates = Array.from(new Set(places.map(p => p.state).filter(Boolean)));
+    
+    return (
+      <div className="mb-8">
+        <label htmlFor="state-select" className="block text-sm font-medium text-gray-700 mb-2">
+          Filter by State
+        </label>
+        <select
+          id="state-select"
+          value={selectedState || ''}
+          onChange={(e) => selectState && selectState(e.target.value || null)}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        >
+          <option value="">All States</option>
+          {availableStates.map((state) => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
+  // Handle error and loading states with conditional rendering
+  if (error) {
+    return <div className="text-red-500 p-4">Error loading destinations: {error.message}</div>;
+  }
+  
+  if (loading) {
+    return <div className="text-center p-8">Loading destinations...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white py-12">
@@ -189,8 +297,12 @@ export default function Destinations() {
             Explore India's Destinations
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Discover the most beautiful destinations across India's diverse states and cities
+            {selectedState 
+              ? `Discover destinations in ${selectedState}`
+              : 'Discover the most beautiful destinations across India\'s diverse states and cities'}
           </p>
+          
+          <StateSelector />
           
           {/* View Mode Toggle */}
           <div className="flex justify-center mb-8">
@@ -235,14 +347,7 @@ export default function Destinations() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-4 w-48 bg-gray-200 rounded mb-4"></div>
-              <div className="text-gray-500">Loading destinations...</div>
-            </div>
-          </div>
-        ) : viewMode === 'states' ? (
+        {viewMode === 'states' ? (
           /* States View */
           <div className="space-y-8">
             {filteredData.map((stateGroup) => (
@@ -410,7 +515,7 @@ export default function Destinations() {
           </div>
         )}
 
-        {!loading && ((viewMode === 'states' && filteredData.length === 0) || (viewMode === 'cities' && filteredCities.length === 0)) && (
+        {((viewMode === 'states' && filteredData.length === 0) || (viewMode === 'cities' && filteredCities.length === 0)) && (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-medium text-gray-900">No {viewMode} found</h3>
             <p className="mt-2 text-gray-500">
