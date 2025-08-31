@@ -29,6 +29,7 @@ interface StateGroup {
   averageRating: number;
   isExpanded: boolean;
   featuredPlace: Place;
+  image_url?: string;
 }
 
 export default function Destinations() {
@@ -129,7 +130,8 @@ export default function Destinations() {
           totalPlaces: allPlaces.length,
           averageRating: stateAverageRating,
           isExpanded: false,
-          featuredPlace: stateFeaturedPlace
+          featuredPlace: stateFeaturedPlace,
+          image_url: state.image_url
         };
       }).sort((a, b) => a.state.localeCompare(b.state));
       
@@ -195,13 +197,17 @@ export default function Destinations() {
           return currentRating > bestRating ? current : best;
         }, allPlaces[0]);
 
+        // Try to find the state in the states array to get its image_url
+        const stateData = states.find(s => s.name === state);
+        
         return {
           state,
           cities,
           totalPlaces: allPlaces.length,
           averageRating: stateAverageRating,
           isExpanded: false,
-          featuredPlace: stateFeaturedPlace
+          featuredPlace: stateFeaturedPlace,
+          image_url: stateData?.image_url
         };
       }).sort((a, b) => a.state.localeCompare(b.state));
 
@@ -396,7 +402,7 @@ export default function Destinations() {
                 <div className="bg-white rounded-2xl overflow-hidden shadow-lg h-full flex flex-col transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                   <div className="relative overflow-hidden flex-1">
                     <img
-                      src={stateGroup.featuredPlace?.imageUrl || '/images/placeholder.jpg'}
+                      src={stateGroup.image_url || '/images/placeholder.jpg'}
                       alt={stateGroup.state}
                       className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
                       loading="lazy"
