@@ -395,7 +395,9 @@ export default function Destinations() {
             {filteredData.map((stateGroup, index) => (
               <Link
                 key={stateGroup.state}
-                to={`/state/${stateGroup.state.replace(/\s+/g, '-').toLowerCase()}`}
+                to={stateGroup.state.toLowerCase() === 'uttar pradesh' 
+                  ? '/destinations/uttar-pradesh' 
+                  : `/state/${stateGroup.state.replace(/\s+/g, '-').toLowerCase()}`}
                 className="group card-hover-effect"
                 style={{ animationDelay: `${index * 50}ms` }}
               >

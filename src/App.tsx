@@ -7,6 +7,7 @@ import CityPage from './pages/CityPage';
 import UserProfile from './pages/UserProfile';
 import AdminPage from './pages/AdminPage';
 import Destinations from './pages/Destinations';
+import UttarPradeshPage from './pages/UttarPradeshPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -50,6 +51,7 @@ function AppContent() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/destinations" element={<Destinations />} />
+                <Route path="/destinations/uttar-pradesh" element={<UttarPradeshPage />} />
                 <Route path="/city/:cityId" element={<CityPage />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/admin" element={<AdminPage />} />
