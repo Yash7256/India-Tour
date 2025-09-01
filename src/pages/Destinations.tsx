@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { Place } from '../types';
 import { Link } from 'react-router-dom';
@@ -32,7 +32,7 @@ interface StateGroup {
   image_url?: string;
 }
 
-export default function Destinations() {
+const Destinations = () => {
   const { 
     places, 
     loading, 
@@ -395,9 +395,7 @@ export default function Destinations() {
             {filteredData.map((stateGroup, index) => (
               <Link
                 key={stateGroup.state}
-                to={stateGroup.state.toLowerCase() === 'uttar pradesh' 
-                  ? '/destinations/uttar-pradesh' 
-                  : `/state/${stateGroup.state.replace(/\s+/g, '-').toLowerCase()}`}
+                to={`/destinations/${stateGroup.state.replace(/\s+/g, '-').toLowerCase()}`}
                 className="group card-hover-effect"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -476,7 +474,7 @@ export default function Destinations() {
             {filteredCities.map((cityGroup, index) => (
               <Link
                 key={`${cityGroup.stateName}-${cityGroup.city}`}
-                to={`/city/${cityGroup.featuredPlace.id}`}
+                to={`/destinations/${cityGroup.stateName.replace(/\s+/g, '-').toLowerCase()}/${cityGroup.city.replace(/\s+/g, '-').toLowerCase()}`}
                 className="group card-hover-effect"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -556,4 +554,6 @@ export default function Destinations() {
       </div>
     </div>
   );
-}
+};
+
+export default Destinations;

@@ -47,6 +47,51 @@ const initialState: DataState = {
   stateDetailsError: null,
 };
 
+interface DataContextType {
+  places: Place[];
+  cities: City[];
+  states: State[];
+  placesLoading: boolean;
+  citiesLoading: boolean;
+  statesLoading: boolean;
+  placesError: Error | null;
+  citiesError: Error | null;
+  statesError: Error | null;
+  selectedState: State | null;
+  stateDetails: State | null;
+  stateDetailsLoading: boolean;
+  stateDetailsError: Error | null;
+  fetchPlaces: () => Promise<void>;
+  fetchCities: () => Promise<void>;
+  fetchStates: () => Promise<void>;
+  fetchCitiesByState: (stateName: string) => Promise<City[]>;
+  searchPlaces: (query: string) => Promise<Place[]>;
+  searchCities: (query: string) => Promise<City[]>;
+  searchStates: (query: string) => Promise<State[]>;
+  selectState: (stateId: string | null) => Promise<void>;
+  getStateById: (stateId: string) => Promise<State | null>;
+  getCityById: (cityId: string) => City | null;
+  getPlaceById: (placeId: string) => Place | null;
+  addReview: (review: Omit<Review, 'id' | 'created_at' | 'updated_at'>) => Promise<Review>;
+  // Filter methods
+  filterPlacesByCategory: (category: PlaceCategory) => Place[];
+  filterPlacesByCity: (cityId: string) => Place[];
+  filterPlacesByState: (stateName: string) => Place[];
+  getCitiesByState: (stateName: string) => City[];
+  // Event methods
+  getEventsByCity: (cityId: string) => Event[];
+  getEventsByPlace: (placeId: string) => Event[];
+  getUpcomingEvents: () => Event[];
+  // Transport methods
+  getTransportByCity: (cityId: string) => TransportOption[];
+  getTransportByType: (type: TransportType) => TransportOption[];
+  // Review methods
+  getReviewsByPlace: (placeId: string) => Review[];
+  // Specialty methods
+  getSpecialtiesByCity: (cityId: string) => LocalSpecialty[];
+  getSpecialtiesByType: (type: SpecialtyType) => LocalSpecialty[];
+}
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const useData = () => {
@@ -60,8 +105,6 @@ export const useData = () => {
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<DataState>(initialState);
 
-  // Loading and error states are now calculated in the render method
-
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -74,7 +117,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
   };
 
-  const fetchStates = async (): Promise<void> => {
+  const fetchStates = useCallback(async (): Promise<void> => {
     try {
       setState(prev => ({ ...prev, statesLoading: true, statesError: null }));
       
@@ -113,9 +156,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         statesLoading: false
       }));
     }
-  };
+  }, []);
   
-  const selectState = async (stateId: string | null) => {
+  const selectState = useCallback(async (stateId: string | null) => {
     try {
       if (!stateId) {
         setState(prev => ({
@@ -173,7 +216,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stateDetailsLoading: false
       }));
     }
-  };
+  }, []);
 
   const getStateById = useCallback(async (id: string): Promise<State | null> => {
     try {
@@ -191,7 +234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const searchStates = async (query: string): Promise<State[]> => {
+  const searchStates = useCallback(async (query: string): Promise<State[]> => {
     try {
       const { data, error } = await supabase
         .rpc('search_states', { query });
@@ -202,13 +245,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error searching states:', err);
       return [];
     }
-  };
+  }, []);
 
-  const fetchPlaces = async (): Promise<void> => {
+  const fetchPlaces = useCallback(async (): Promise<void> => {
     try {
       setState(prev => ({ ...prev, placesLoading: true, placesError: null }));
       
-      // We'll get states through the cities join
       // Get all places with their city and state information
       const { data: places, error } = await supabase
         .from('places')
@@ -261,9 +303,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stack: error.stack
       });
     }
-  };
+  }, []);
 
-  const fetchCities = async (): Promise<void> => {
+  const fetchCities = useCallback(async (): Promise<void> => {
     try {
       setState(prev => ({ ...prev, citiesLoading: true, citiesError: null }));
       
@@ -294,23 +336,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
       console.error('Error fetching cities:', error);
     }
-  };
+  }, []);
 
-  const getCityById = (id: string): City | undefined => {
-    return state.cities.find(city => city.id === id);
-  };
+  const getCityById = useCallback((id: string): City | null => {
+    return state.cities.find(city => city.id === id) || null;
+  }, [state.cities]);
 
-  const getPlaceById = (id: string): Place | undefined => {
-    return state.places.find(place => place.id === id);
-  };
+  const getPlaceById = useCallback((id: string): Place | null => {
+    return state.places.find(place => place.id === id) || null;
+  }, [state.places]);
 
-  const getCitiesByState = (stateName: string): City[] => {
+  const getCitiesByState = useCallback((stateName: string): City[] => {
     return state.cities.filter(city => 
       city.state.toLowerCase().includes(stateName.toLowerCase())
     );
-  };
+  }, [state.cities]);
 
-  const searchPlaces = async (query: string): Promise<Place[]> => {
+  const searchPlaces = useCallback(async (query: string): Promise<Place[]> => {
     if (!query.trim()) return state.places;
     
     const lowercaseQuery = query.toLowerCase().trim();
@@ -352,9 +394,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setState(prev => ({ ...prev, placesLoading: false }));
     }
-  };
+  }, [state.places]);
 
-  const searchCities = async (query: string): Promise<City[]> => {
+  const searchCities = useCallback(async (query: string): Promise<City[]> => {
     if (!query.trim()) return [];
     
     const lowercaseQuery = query.toLowerCase().trim();
@@ -404,28 +446,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setState(prev => ({ ...prev, citiesLoading: false }));
     }
-  };
+  }, [state.cities]);
 
-  const filterPlacesByCategory = (category: PlaceCategory): Place[] => {
+  const filterPlacesByCategory = useCallback((category: PlaceCategory): Place[] => {
     return state.places.filter(place => place.category === category);
-  };
+  }, [state.places]);
 
-  const filterPlacesByCity = (cityId: string): Place[] => {
+  const filterPlacesByCity = useCallback((cityId: string): Place[] => {
     return state.places.filter(place => place.city_id === cityId);
-  };
+  }, [state.places]);
 
-  const filterPlacesByState = (stateName: string): Place[] => {
+  const filterPlacesByState = useCallback((stateName: string): Place[] => {
     return state.places.filter(place => 
       place.state.toLowerCase().includes(stateName.toLowerCase())
     );
-  };
+  }, [state.places]);
 
-  const getReviewsByPlace = (placeId: string): Review[] => {
+  const getReviewsByPlace = useCallback((placeId: string): Review[] => {
     const place = getPlaceById(placeId);
     return place?.reviews || [];
-  };
+  }, [getPlaceById]);
 
-  const addReview = async (review: Omit<Review, 'id' | 'created_at' | 'updated_at'>): Promise<Review> => {
+  const addReview = useCallback(async (review: Omit<Review, 'id' | 'created_at' | 'updated_at'>): Promise<Review> => {
     try {
       const { data, error } = await supabase
         .from('reviews')
@@ -455,104 +497,129 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error adding review:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const getSpecialtiesByCity = (cityId: string): LocalSpecialty[] => {
+  const getSpecialtiesByCity = useCallback((cityId: string): LocalSpecialty[] => {
     const city = getCityById(cityId);
     return city?.local_specialties || [];
-  };
+  }, [getCityById]);
 
-  const getSpecialtiesByType = (type: SpecialtyType): LocalSpecialty[] => {
+  const getSpecialtiesByType = useCallback((type: SpecialtyType): LocalSpecialty[] => {
     return state.cities.flatMap(city => 
       (city.local_specialties || []).filter(specialty => specialty.type === type)
     );
-  };
+  }, [state.cities]);
 
-  const getEventsByCity = (cityId: string): Event[] => {
+  const getEventsByCity = useCallback((cityId: string): Event[] => {
     const city = getCityById(cityId);
     return city?.events || [];
-  };
+  }, [getCityById]);
 
-  const getEventsByPlace = (placeId: string): Event[] => {
+  const getEventsByPlace = useCallback((placeId: string): Event[] => {
     const place = getPlaceById(placeId);
     return place?.events || [];
-  };
+  }, [getPlaceById]);
 
-  const getUpcomingEvents = (): Event[] => {
+  const getUpcomingEvents = useCallback((): Event[] => {
     const now = new Date();
     return state.cities.flatMap(city => 
       (city.events || []).filter(event => new Date(event.start_date) >= now)
     ).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
-  };
+  }, [state.cities]);
 
-  const getTransportByCity = (cityId: string): TransportOption[] => {
+  const getTransportByCity = useCallback((cityId: string): TransportOption[] => {
     const city = getCityById(cityId);
     return city?.transport_options || [];
-  };
+  }, [getCityById]);
 
-  const getTransportByType = (type: TransportType): TransportOption[] => {
+  const getTransportByType = useCallback((type: TransportType): TransportOption[] => {
     return state.cities.flatMap(city => 
       (city.transport_options || []).filter(transport => transport.type === type)
     );
+  }, [state.cities]);
+
+  // Function to fetch cities by state name
+  const fetchCitiesByState = useCallback(async (stateName: string): Promise<City[]> => {
+    try {
+      setState(prev => ({ ...prev, citiesLoading: true, citiesError: null }));
+      
+      const { data: cities, error } = await supabase
+        .from('cities')
+        .select(`
+          *,
+          state:states!inner(*)
+        `)
+        .eq('state.name', stateName)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      // Transform the data to match our City interface
+      const processedCities = (cities || []).map(city => ({
+        ...city,
+        state: city.state?.name || 'Unknown State',
+      }));
+
+      return processedCities;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch cities by state');
+      console.error('Error fetching cities by state:', error);
+      setState(prev => ({ ...prev, citiesError: error }));
+      throw error;
+    } finally {
+      setState(prev => ({ ...prev, citiesLoading: false }));
+    }
+  }, []);
+
+  const contextValue: DataContextType = {
+    // State values
+    ...state,
+    
+    // Data fetching methods
+    fetchPlaces,
+    fetchCities,
+    fetchStates,
+    fetchCitiesByState,
+    
+    // Search methods
+    searchPlaces,
+    searchCities,
+    searchStates,
+    
+    // State management methods
+    selectState,
+    getStateById,
+    
+    // Getter methods
+    getCityById,
+    getPlaceById,
+    getCitiesByState,
+    
+    // Filter methods
+    filterPlacesByState,
+    filterPlacesByCity,
+    filterPlacesByCategory,
+    
+    // Event methods
+    getEventsByPlace,
+    getEventsByCity,
+    getUpcomingEvents,
+    
+    // Transport methods
+    getTransportByCity,
+    getTransportByType,
+    
+    // Review methods
+    getReviewsByPlace,
+    addReview,
+    
+    // Specialty methods
+    getSpecialtiesByCity,
+    getSpecialtiesByType,
   };
 
-  // Calculate loading and error states
-  const currentLoading = state.placesLoading || state.citiesLoading || state.statesLoading || state.stateDetailsLoading;
-  const currentError = state.placesError || state.citiesError || state.statesError || state.stateDetailsError;
-
   return (
-    <DataContext.Provider value={{
-      // Data
-      places: state.places,
-      cities: state.cities,
-      states: state.states,
-      selectedState: state.selectedState,
-      stateDetails: state.stateDetails,
-      
-      // Loading states
-      loading: currentLoading,
-      placesLoading: state.placesLoading,
-      citiesLoading: state.citiesLoading,
-      statesLoading: state.statesLoading,
-      stateDetailsLoading: state.stateDetailsLoading,
-      
-      // Error states
-      error: currentError,
-      placesError: state.placesError,
-      citiesError: state.citiesError,
-      statesError: state.statesError,
-      stateDetailsError: state.stateDetailsError,
-      
-      // State methods
-      fetchStates,
-      selectState,
-      getStateById,
-      searchStates,
-      
-      // Search methods
-      searchPlaces,
-      searchCities,
-      
-      // Filter methods
-      filterPlacesByState,
-      filterPlacesByCity,
-      filterPlacesByCategory,
-      
-      // Getter methods
-      getCityById,
-      getCitiesByState,
-      getEventsByPlace,
-      getUpcomingEvents,
-      getTransportByCity,
-      getTransportByType,
-      getReviewsByPlace,
-      getSpecialtiesByCity,
-      getSpecialtiesByType,
-      getEventsByCity,
-      
-      // Mutation methods
-      addReview,
-    }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );

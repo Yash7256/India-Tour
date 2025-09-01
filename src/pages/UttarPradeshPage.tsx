@@ -137,7 +137,7 @@ const UttarPradeshPage = () => {
           </div>
         </div>
         {/* Decorative overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-250 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-200 to-transparent"></div>
       </div>
       
       {/* Content Section */}
