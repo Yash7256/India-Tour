@@ -66,7 +66,7 @@ const TravelDestinationUI = () => {
           .from('places')
           .select('*')
           .eq('state', 'Madhya Pradesh')
-          .eq('city', 'Bhopal')
+          .eq('city', 'Pachmarhi')
           .order('rating', { ascending: false });
 
         if (fetchError) {
@@ -156,8 +156,8 @@ const TravelDestinationUI = () => {
       {/* Hero Section */}
       <div className="relative h-96 overflow-hidden">
         <img 
-          src="https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=1200&h=600&fit=crop" 
-          alt="Bhopal Skyline" 
+          src="https://i.ibb.co/bgdQ6c3f/pach.png" 
+          alt="Pachmarhi" 
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
@@ -166,7 +166,7 @@ const TravelDestinationUI = () => {
             <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
             Back to destinations
           </button>
-          <h1 className="text-6xl font-bold mb-2">Bhopal</h1>
+          <h1 className="text-6xl font-bold mb-2">Pachmarhi</h1>
           <div className="flex items-center text-lg">
             <MapPin className="h-5 w-5 mr-2" />
             <span>Madhya Pradesh</span>
@@ -186,9 +186,9 @@ const TravelDestinationUI = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* About Section */}
             <section className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-2xl font-bold mb-4">About Bhopal</h2>
+              <h2 className="text-2xl font-bold mb-4">About Pachmarhi</h2>
               <p className="text-gray-600 mb-6">
-                The City of Lakes, capital of Madhya Pradesh, known for its rich history, beautiful lakes, and cultural heritage.
+               Queen of Satpura - The Only Hill Station of Madhya Pradesh
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
