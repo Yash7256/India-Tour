@@ -11,6 +11,8 @@ import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
 import BhopalPage from './pages/BhopalPage';
 import PachmarhiPage from './pages/Pachmarhipage';
+import NeemuchPage from './pages/NeemuchPage';
+import SheopurPage from './pages/SheopurPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -60,6 +62,8 @@ function AppContent() {
                 <Route path="/madhya-pradesh" element={<MadhyaPradeshPage />} />
                 <Route path="/bhopal" element={<BhopalPage />} />
                 <Route path="/pachmarhi" element={<PachmarhiPage />} />
+                <Route path="/neemuch" element={<NeemuchPage />} />
+                <Route path="/sheopur" element={<SheopurPage />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>

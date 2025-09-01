@@ -21,7 +21,7 @@ interface CityWithDetails extends City {
 }
 
 const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
-  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : city.name.toLowerCase() === 'pachmarhi' ? '/pachmarhi' : `#${city.name.toLowerCase()}`} 
+  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : city.name.toLowerCase() === 'pachmarhi' ? '/pachmarhi' : city.name.toLowerCase() === 'neemuch' ? '/neemuch' :city.name.toLowerCase() === 'sheopur' ? '/sheopur':`#${city.name.toLowerCase()}`} 
         className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative h-64 overflow-hidden">
       <img
