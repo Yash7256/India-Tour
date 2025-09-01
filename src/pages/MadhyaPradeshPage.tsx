@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   MapPinIcon, 
   StarIcon, 
@@ -20,7 +21,8 @@ interface CityWithDetails extends City {
 }
 
 const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
-  <div className="group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
+  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : `#${city.name.toLowerCase()}`} 
+        className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative h-64 overflow-hidden">
       <img
         src={city.image_url || `https://source.unsplash.com/random/800x600/?${city.name},india`}
@@ -61,7 +63,7 @@ const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
         </button>
       </div>
     </div>
-  </div>
+  </Link>
 );
 
 const MadhyaPradeshPage: React.FC = () => {

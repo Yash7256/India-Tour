@@ -9,6 +9,7 @@ import AdminPage from './pages/AdminPage';
 import Destinations from './pages/Destinations';
 import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
+import BhopalPage from './pages/BhopalPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -55,6 +56,8 @@ function AppContent() {
                 <Route path="/destinations/uttar-pradesh" element={<UttarPradeshPage />} />
                 <Route path="/destinations/madhya-pradesh" element={<MadhyaPradeshPage />} />
                 <Route path="/city/:cityId" element={<CityPage />} />
+                <Route path="/madhya-pradesh" element={<MadhyaPradeshPage />} />
+                <Route path="/bhopal" element={<BhopalPage />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>
