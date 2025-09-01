@@ -165,7 +165,7 @@ const Header: React.FC = () => {
                   <img 
                     src="/images/logo.png" 
                     alt="India Tour Logo" 
-                    className="h-12 w-12 group-hover:scale-105 transition-transform duration-200"
+                    className="h-20 w-20 group-hover:scale-105 transition-transform duration-200"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -177,8 +177,8 @@ const Header: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <span className="text-2xl font-bold text-gray-900 tracking-tight">INDIA</span>
-                  <span className="text-2xl font-bold text-orange-600 tracking-tight">TOUR</span>
+                  <span className="text-3xl font-bold text-gray-900 tracking-tight">INDIA</span>
+                  <span className="text-3xl font-bold text-orange-600 tracking-tight">TOUR</span>
                 </div>
               </Link>
             </div>
@@ -379,7 +379,7 @@ const Header: React.FC = () => {
                   <img 
                     src="/images/logo.png" 
                     alt="India Tour Logo" 
-                    className="h-10 w-10"
+                    className="h-16 w-16"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
