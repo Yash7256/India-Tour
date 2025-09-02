@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  MapPinIcon, 
-  StarIcon, 
-  ClockIcon, 
+import {
+  MapPinIcon,
+  StarIcon,
+  ClockIcon,
   ArrowRightIcon,
   BuildingOffice2Icon,
   UserGroupIcon,
@@ -21,8 +21,58 @@ interface CityWithDetails extends City {
 }
 
 const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
-  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : city.name.toLowerCase() === 'pachmarhi' ? '/pachmarhi' : city.name.toLowerCase() === 'neemuch' ? '/neemuch' :city.name.toLowerCase() === 'sheopur' ? '/sheopur':`#${city.name.toLowerCase()}`} 
-        className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
+  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : 
+    city.name.toLowerCase() === 'pachmarhi' ? '/pachmarhi' : 
+    city.name.toLowerCase() === 'neemuch' ? '/neemuch' : 
+    city.name.toLowerCase() === 'sheopur' ? '/sheopur' : 
+    city.name.toLowerCase() === 'satna' ? '/satna' : 
+    city.name.toLowerCase() === 'chhatarpur' ? '/chhatarpur' : 
+    city.name.toLowerCase() === 'vidisha' ? '/vidisha' : 
+    city.name.toLowerCase() === 'tikamgarh' ? '/tikamgarh' : 
+    city.name.toLowerCase() === 'sehore' ? '/sehore' : 
+    city.name.toLowerCase() === 'ujjain' ? '/ujjain' : 
+    city.name.toLowerCase() === 'umaria' ? '/umaria' : 
+    city.name.toLowerCase() === 'singrauli' ? '/singrauli' :
+    city.name.toLowerCase() === 'sidhi' ? '/sidhi' : 
+    city.name.toLowerCase() === 'shivpuri' ? '/shivpuri' : 
+    city.name.toLowerCase() === 'shahdol' ? '/shahdol' : 
+    city.name.toLowerCase() === 'seoni' ? '/seoni' : 
+    city.name.toLowerCase() === 'sagar' ? '/sagar' :
+    city.name.toLowerCase() === 'rewa' ? '/rewa' :
+    city.name.toLowerCase() === 'ratlam' ? '/ratlam' :
+    city.name.toLowerCase() === 'raisen' ? '/raisen' :
+    city.name.toLowerCase() === 'panna' ? '/panna' :
+    city.name.toLowerCase() === 'narsinghpur' ? '/narsinghpur' :
+    city.name.toLowerCase() === 'narmadapuram' ? '/narmadapuram' :
+    city.name.toLowerCase() === 'mandsaur' ? '/mandsaur' :
+    city.name.toLowerCase() === 'mandla' ? '/mandla' :
+    city.name.toLowerCase() === 'khargone' ? '/khargone' :
+    city.name.toLowerCase() === 'khandwa' ? '/khandwa' :
+    city.name.toLowerCase() === 'katni' ? '/katni' :
+    city.name.toLowerCase() === 'jhabua' ? '/jhabua' :
+    city.name.toLowerCase() === 'jabalpur' ? '/jabalpur' :
+    city.name.toLowerCase() === 'indore' ? '/indore' :
+    city.name.toLowerCase() === 'gwalior' ? '/gwalior' :
+    city.name.toLowerCase() === 'datia' ? '/datia' :
+    city.name.toLowerCase() === 'dewas' ? '/dewas' :
+    city.name.toLowerCase() === 'chhindwada' ? '/chhindwada' :
+    city.name.toLowerCase() === 'damoh' ? '/damoh' :
+    city.name.toLowerCase() === 'burhanpur' ? '/burhanpur' :
+    city.name.toLowerCase() === 'bhopal' ? '/bhopal' :
+    city.name.toLowerCase() === 'bhind' ? '/bhind' :
+    city.name.toLowerCase() === 'betul' ? '/betul' :
+    city.name.toLowerCase() === 'barwani' ? '/barwani' :
+    city.name.toLowerCase() === 'balaghat' ? '/balaghat' :
+    city.name.toLowerCase() === 'ashokanagar' ? '/ashokanagar' :
+    city.name.toLowerCase() === 'anuppur' ? '/anuppur' :
+    city.name.toLowerCase() === 'alirajpur' ? '/alirajpur' :
+    city.name.toLowerCase() === 'agarmalwa' ? '/agarmalwa' :
+    `#${city.name.toLowerCase()}`}
+
+
+
+
+    className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative h-64 overflow-hidden">
       <img
         src={city.image_url || `https://source.unsplash.com/random/800x600/?${city.name},india`}
@@ -30,14 +80,14 @@ const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-      
+
       {city.rating && (
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center">
           <StarIcon className="h-4 w-4 text-yellow-500 mr-1" />
           <span className="text-sm font-bold text-gray-800">{city.rating.toFixed(1)}</span>
         </div>
       )}
-      
+
       <div className="absolute bottom-0 left-0 p-6 w-full">
         <h3 className="text-2xl font-bold text-white mb-2">{city.name}</h3>
         <div className="flex items-center text-blue-200 text-sm">
@@ -46,12 +96,12 @@ const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
         </div>
       </div>
     </div>
-    
+
     <div className="p-6">
       <p className="text-gray-600 text-base leading-relaxed mb-6 line-clamp-3">
         {city.description || `Discover the enchanting city of ${city.name} with its rich cultural heritage, stunning architecture, and vibrant local traditions.`}
       </p>
-      
+
       <div className="flex items-center justify-between border-t border-gray-100 pt-4">
         <div className="flex items-center text-sm text-gray-500">
           <BuildingOffice2Icon className="h-4 w-4 mr-1" />
@@ -98,7 +148,7 @@ const MadhyaPradeshPage: React.FC = () => {
       return cities;
     }
     const query = searchQuery.toLowerCase();
-    return cities.filter(city => 
+    return cities.filter(city =>
       city.name.toLowerCase().includes(query) ||
       (city.description && city.description.toLowerCase().includes(query))
     );
@@ -134,36 +184,36 @@ const MadhyaPradeshPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Hero Section */}
       <div className="relative h-[400px] w-full overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-110 transition-transform duration-1000"
           style={{
             backgroundImage: `url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`
           }}
         />
-        
+
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 via-indigo-900/60 to-purple-900/80"></div>
-        
+
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-20 left-10 w-2 h-2 bg-blue-300 rounded-full opacity-60 animate-float-1"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-indigo-300 rounded-full opacity-50 animate-float-2"></div>
           <div className="absolute bottom-40 left-32 w-2 h-2 bg-purple-300 rounded-full opacity-70 animate-float-3"></div>
           <div className="absolute top-60 left-1/2 w-1 h-1 bg-blue-200 rounded-full opacity-80 animate-float-4"></div>
         </div>
-        
+
         <div className="relative h-full flex items-center justify-center">
           <div className="text-center text-white px-6 max-w-5xl mx-auto">
             <div className="mb-6 animate-fade-in">
               <SparklesIcon className="h-16 w-16 text-blue-300 mx-auto mb-4 animate-pulse-gentle" />
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Explore Madhya Pradesh
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8">
               Discover the heart of Incredible India with its rich heritage, wildlife, and cultural wonders
             </p>
-            
+
             <div className="max-w-2xl mx-auto relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -197,28 +247,28 @@ const MadhyaPradeshPage: React.FC = () => {
                 <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-purple-400/10 rounded-full animate-pulse-slow animation-delay-2000"></div>
                 <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-indigo-400/10 rounded-full animate-pulse-slow animation-delay-3000"></div>
               </div>
-              
+
               <div className="relative z-10 p-12 text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-6">
                   <BuildingOffice2Icon className="h-10 w-10 text-blue-600" />
                 </div>
-                
+
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Cities Coming Soon!</h2>
-                
+
                 <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
-                  We're working hard to bring you detailed information about cities in Madhya Pradesh. 
+                  We're working hard to bring you detailed information about cities in Madhya Pradesh.
                   Check back soon to explore the rich cultural heritage and stunning destinations.
                 </p>
-                
+
                 <div className="flex flex-wrap justify-center gap-4">
-                  <button 
+                  <button
                     onClick={() => setSearchQuery('')}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center"
                   >
                     <ArrowRightIcon className="h-5 w-5 mr-2 -ml-1" />
                     View All Destinations
                   </button>
-                  
+
                   <button className="px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-medium">
                     <ClockIcon className="h-5 w-5 mr-2 -ml-1 inline" />
                     Get Notified
