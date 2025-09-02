@@ -156,8 +156,8 @@ const TravelDestinationUI = () => {
       {/* Hero Section */}
       <div className="relative h-96 overflow-hidden">
         <img 
-          src="https://i.ibb.co/twG7RTzm/Chat-GPT-Image-Sep-2-2025-12-16-17-AM.png" 
-          alt="Sidhi" 
+          src="https://i.ibb.co/5W4fjLn3/360-F-720510630-wc60bya9z95dsc-Phvsop-L7se-Uq-Qh2bd9.jpg" 
+          alt="Jabalpur" 
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
@@ -166,7 +166,7 @@ const TravelDestinationUI = () => {
             <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
             Back to destinations
           </button>
-          <h1 className="text-6xl font-bold mb-2">Sidhi</h1>
+          <h1 className="text-6xl font-bold mb-2">Jabalpur</h1>
           <div className="flex items-center text-lg">
             <MapPin className="h-5 w-5 mr-2" />
             <span>Madhya Pradesh</span>
@@ -186,9 +186,9 @@ const TravelDestinationUI = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* About Section */}
             <section className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-2xl font-bold mb-4">About Sidhi</h2>
+              <h2 className="text-2xl font-bold mb-4">About Jabalpur</h2>
               <p className="text-gray-600 mb-6">
-               Queen of Satpura - The Only Hill Station of Madhya Pradesh
+                Sanskardhani - Home to famous Marbel Rocks and Waterfalls
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -198,7 +198,8 @@ const TravelDestinationUI = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Best Time to Visit</h3>
-                    <p className="text-gray-600">October to February</p>
+                    <p className="text-gray-600">October - February - Winter (Cool, Pleasent waether perfect for exploring)</p>
+                    <p className="text-gray-600">July - September - Monsoon (Lush green landscapes)</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -207,7 +208,7 @@ const TravelDestinationUI = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Climate</h3>
-                    <p className="text-gray-600">Tropical</p>
+                    <p className="text-gray-600">Humid Subtropical</p>
                   </div>
                 </div>
               </div>
