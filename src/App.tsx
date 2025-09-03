@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -9,7 +10,7 @@ import AdminPage from './pages/AdminPage';
 import Destinations from './pages/Destinations';
 import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
-import BhopalPage from './pages/BhopalPage';
+import BhopalPage from './states/Madhya Pradesh/BhopalPage';
 import PachmarhiPage from './pages/Pachmarhipage';
 import NeemuchPage from './pages/NeemuchPage';
 import SheopurPage from './pages/SheopurPage';
@@ -154,6 +155,7 @@ function AppContent() {
             <Footer />
           </div>
         </Router>
+        <Analytics />
       </NotificationProvider>
     </DataProvider>
   );

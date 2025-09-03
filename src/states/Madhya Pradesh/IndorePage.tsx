@@ -651,17 +651,28 @@ const IndorePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="relative h-96 overflow-hidden">
+     {/* Hero Section */}
+     <div className="relative h-96 overflow-hidden">
         <img
           src="https://i.ibb.co/gMKwsrdm/photo-1740056359361-f55cc8f34035.jpg"
           alt="Indore"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover blur-sm"
         />
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="text-center text-white">
-            <h1 className="text-5xl font-bold mb-4">INDORE</h1>
-            <p className="text-xl">Cleanest City of India</p>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/70"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white max-w-4xl px-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <h1 className="text-6xl md:text-7xl font-bold mb-4 tracking-wide drop-shadow-2xl">
+                INDORE
+              </h1>
+              <div className="w-24 h-1 bg-orange-400 mx-auto mb-4 rounded-full"></div>
+              <p className="text-xl md:text-2xl font-light tracking-wider opacity-90">
+                Cleanest City of India
+              </p>
+              <p className="text-sm md:text-base mt-2 opacity-75 font-medium">
+                Commercial Capital of Madhya Pradesh
+              </p>
+            </div>
           </div>
         </div>
       </div>
