@@ -1,3 +1,35 @@
+/**
+ * SQL Debugging Queries for Local Specialties
+ * 
+ * 1. Check table structure:
+ *    SELECT column_name, data_type, is_nullable
+ *    FROM information_schema.columns 
+ *    WHERE table_name = 'local_specialties'
+ *    ORDER BY ordinal_position;
+ *
+ * 2. Check RLS policies:
+ *    SELECT * FROM pg_policies WHERE tablename = 'local_specialties';
+ *
+ * 3. Check sample data:
+ *    SELECT id, name, city, state, city_id, rating, COUNT(*) OVER() as total_count
+ *    FROM local_specialties 
+ *    WHERE city ILIKE '%jabalpur%' OR state ILIKE '%madhya%pradesh%'
+ *    ORDER BY name
+ *    LIMIT 10;
+ *
+ * 4. Check city reference:
+ *    SELECT id, name, state, country 
+ *    FROM cities 
+ *    WHERE name ILIKE '%jabalpur%' 
+ *    AND state ILIKE '%madhya%pradesh%';
+ *
+ * 5. Check for missing city_id references:
+ *    SELECT DISTINCT city, state, city_id
+ *    FROM local_specialties
+ *    WHERE (city_id IS NULL OR city_id = '') 
+ *    AND (city ILIKE '%jabalpur%' OR state ILIKE '%madhya%pradesh%');
+ */
+
 import { useState, useEffect } from 'react';
 import { 
   Star,
@@ -37,80 +69,134 @@ interface Place extends BaseItem {
   accessibility?: boolean;
 }
 
-interface LocalSpecialty extends BaseItem {
-  price_range?: string;
-  category?: string;
+interface LocalSpecialty {
+  id: string;
+  name: string;
+  description: string | null;
+  city: string;
+  state: string;
+  image_url: string | null;
+  category: string | null;
+  created_at: string;
+  updated_at: string;
+  city_id: string | null;
+  // Optional fields that might be present in some records
+  country?: string;
+  rating?: string | number | null;
 }
 
 interface TransportOption extends BaseItem {
   type?: string;
   operating_hours?: string;
   price_range?: string;
+  city_id?: string;
 }
 
 interface Event extends BaseItem {
   start_date: string;
   end_date: string;
-  location: string;
+  location?: string;
+  venue?: string;
   ticket_price?: string;
   category?: string;
+  city_id?: string;
+  img_url?: string;
 }
 
 const JabalpurPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTab, setSelectedTab] = useState<string>('Attractions');
-  
-  // State for different data types
+  const [selectedTab, setSelectedTab] = useState('Attractions');
   const [places, setPlaces] = useState<Place[]>([]);
   const [localSpecialties, setLocalSpecialties] = useState<LocalSpecialty[]>([]);
-  const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [transportOptions, setTransportOptions] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cityId, setCityId] = useState<string>('jabalpur-mp'); 
+
+  // Helper function to get city ID
+  const getCityId = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cities')
+        .select('id')
+        .eq('name', 'Jabalpur')
+        .eq('state', 'Madhya Pradesh')
+        .single();
+
+      if (error) {
+        console.error('Error fetching city ID:', error);
+        return null;
+      }
+
+      return data?.id || null;
+    } catch (err) {
+      console.error('Error in getCityId:', err);
+      return null;
+    }
+  };
+
+  // Initialize city ID on component mount
+  useEffect(() => {
+    const initializeCityId = async () => {
+      const id = await getCityId();
+      setCityId(id);
+    };
+    initializeCityId();
+  }, []);
 
   // Helper function to render a place card
   const renderPlaceCard = (item: Place | LocalSpecialty | TransportOption | Event, index: number) => {
-    const imageUrl = (item as any).image || (item as any).main_image_url || '/placeholder-image.jpg';
-    const rating = typeof item.rating === 'number' ? item.rating.toFixed(1) : item.rating;
-
+    let imageUrl = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
+    
+    // Check for image sources in order of preference
+    if ('img_url' in item && item.img_url) {
+      imageUrl = item.img_url;
+    } else if ('image_url' in item && typeof (item as any).image_url === 'string') {
+      imageUrl = (item as any).image_url;
+    } else if ('main_image_url' in item && item.main_image_url) {
+      imageUrl = item.main_image_url;
+    } else if ('image' in item && item.image) {
+      imageUrl = item.image;
+    }
+    
     return (
       <div key={`${item.id}-${index}`} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
         <img 
-          src={imageUrl} 
+          src={imageUrl}
           alt={item.name}
           className="w-full h-48 object-cover"
           onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder-image.jpg';
+            // Fallback to placeholder if image fails to load
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
           }}
         />
         <div className="p-4">
-          <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-lg">{item.name}</h3>
-            {item.rating !== undefined && (
-              <div className="flex items-center bg-yellow-100 text-yellow-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                <Star className="w-4 h-4 mr-1" />
-                {rating}
-              </div>
-            )}
-          </div>
-          
+          <h3 className="text-lg font-semibold">{item.name}</h3>
           {item.description && (
-            <p className="mt-2 text-gray-600 text-sm line-clamp-2">
-              {item.description}
-            </p>
+            <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.description}</p>
           )}
-
-          {('location' in item) && (
-            <div className="mt-2 flex items-center text-sm text-gray-500">
-              <MapPin className="w-4 h-4 mr-1" />
-              {(item as Event).location}
+          {'rating' in item && item.rating && (
+            <div className="mt-3 flex items-center">
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+              <span className="ml-1 text-sm">{item.rating}</span>
             </div>
           )}
-
-          {('start_date' in item) && (
-            <div className="mt-2 text-sm text-gray-500">
-              {new Date((item as Event).start_date).toLocaleDateString()} - {new Date((item as Event).end_date).toLocaleDateString()}
+          {'category' in item && item.category && (
+            <span className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full mt-2">
+              {item.category}
+            </span>
+          )}
+          {'price_range' in item && item.price_range && (
+            <div className="mt-2">
+              <span className="text-xs text-gray-500">Price: </span>
+              <span className="text-xs font-medium text-green-600">{item.price_range}</span>
+            </div>
+          )}
+          {'start_date' in item && item.start_date && (
+            <div className="mt-2">
+              <span className="text-xs text-gray-500">Date: </span>
+              <span className="text-xs font-medium">{new Date(item.start_date).toLocaleDateString()}</span>
             </div>
           )}
         </div>
@@ -124,50 +210,157 @@ const JabalpurPage = () => {
       setIsLoading(true);
       setError(null);
       
-      const commonFilters = {
-        state: 'Madhya Pradesh',
-        city: 'Jabalpur'
-      };
-
-      let response;
+      let response: any = { data: null };
       
       switch (selectedTab) {
         case 'Attractions':
           response = await supabase
             .from('places')
             .select('*')
-            .eq('state', commonFilters.state)
-            .eq('city', commonFilters.city)
+            .eq('state', 'Madhya Pradesh')
+            .eq('city', 'Jabalpur')
             .order('rating', { ascending: false });
           if (response.data) setPlaces(response.data);
           break;
           
         case 'Local Specialties':
-          response = await supabase
-            .from('local_specialities')
-            .select('*')
-            .eq('city_id', 'jabalpur-city-id') // You'll need to replace with actual city_id
-            .order('name', { ascending: true });
-          if (response.data) setLocalSpecialties(response.data);
+          try {
+            setIsLoading(true);
+            setError(null);
+            
+            console.log('Fetching local specialties for Jabalpur...');
+            
+            // First try exact match with city and state
+            const { data: specialties, error } = await supabase
+              .from('local_specialties')
+              .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
+              .eq('city', 'Jabalpur')
+              .eq('state', 'Madhya Pradesh')
+              .order('name', { ascending: true });
+            
+            if (error) {
+              console.error('Error fetching specialties:', error);
+              setError('Failed to load local specialties.');
+              return;
+            }
+            
+            if (specialties && specialties.length > 0) {
+              console.log(`Found ${specialties.length} local specialties`);
+              setLocalSpecialties(specialties);
+            } else {
+              console.log('No local specialties found with exact match, trying case-insensitive search...');
+              
+              // Fallback to case-insensitive search
+              const { data: caseInsensitiveResults } = await supabase
+                .from('local_specialties')
+                .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
+                .or('city.ilike.%jabalpur%,state.ilike.%madhya pradesh%')
+                .order('name', { ascending: true });
+                
+              if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
+                console.log(`Found ${caseInsensitiveResults.length} local specialties with case-insensitive search`);
+                setLocalSpecialties(caseInsensitiveResults);
+              } else {
+                console.log('No local specialties found');
+                setError('No local specialties found for this location.');
+              }
+            }
+          } catch (err) {
+            console.error('Error in Local Specialties fetch:', err);
+            setError('An error occurred while loading local specialties.');
+            setLocalSpecialties([]);
+          } finally {
+            setIsLoading(false);
+          }
           break;
           
         case 'Transport':
-          response = await supabase
-            .from('transport_options')
-            .select('*')
-            .eq('city_id', 'jabalpur-city-id') // You'll need to replace with actual city_id
-            .order('name', { ascending: true });
+          if (!cityId) {
+            // Try different approaches similar to local specialties
+            response = await supabase
+              .from('transport_options')
+              .select('*')
+              .eq('city', 'Jabalpur')
+              .eq('state', 'Madhya Pradesh')
+              .order('name', { ascending: true });
+              
+            if ((!response.data || response.data.length === 0) && cityId) {
+              response = await supabase
+                .from('transport_options')
+                .select('*')
+                .eq('city_id', cityId)
+                .order('name', { ascending: true });
+            }
+            
+            if (!response.data || response.data.length === 0) {
+              response = await supabase
+                .from('transport_options')
+                .select('*')
+                .order('name', { ascending: true });
+                
+              if (response.data) {
+                response.data = response.data.filter((item: TransportOption) => 
+                  item.city?.toLowerCase().includes('jabalpur') ||
+                  item.name?.toLowerCase().includes('jabalpur') ||
+                  item.description?.toLowerCase().includes('jabalpur')
+                );
+              }
+            }
+          } else {
+            response = await supabase
+              .from('transport_options')
+              .select('*')
+              .eq('city_id', cityId)
+              .order('name', { ascending: true });
+          }
           if (response.data) setTransportOptions(response.data);
           break;
           
         case 'Events':
           const today = new Date().toISOString();
-          response = await supabase
-            .from('events')
-            .select('*')
-            .eq('city_id', 'jabalpur-city-id') // You'll need to replace with actual city_id
-            .gte('end_date', today)
-            .order('start_date', { ascending: true });
+          
+          if (!cityId) {
+            // Try different approaches for events
+            response = await supabase
+              .from('events')
+              .select('*')
+              .eq('city', 'Jabalpur')
+              .eq('state', 'Madhya Pradesh')
+              .gte('end_date', today)
+              .order('start_date', { ascending: true });
+              
+            if ((!response.data || response.data.length === 0) && cityId) {
+              response = await supabase
+                .from('events')
+                .select('*')
+                .eq('city_id', cityId)
+                .gte('end_date', today)
+                .order('start_date', { ascending: true });
+            }
+            
+            if (!response.data || response.data.length === 0) {
+              response = await supabase
+                .from('events')
+                .select('*')
+                .gte('end_date', today)
+                .order('start_date', { ascending: true });
+                
+              if (response.data) {
+                response.data = response.data.filter((item: Event) => 
+                  item.city?.toLowerCase().includes('jabalpur') ||
+                  item.location?.toLowerCase().includes('jabalpur') ||
+                  item.name?.toLowerCase().includes('jabalpur')
+                );
+              }
+            }
+          } else {
+            response = await supabase
+              .from('events')
+              .select('*')
+              .eq('city_id', cityId)
+              .gte('end_date', today)
+              .order('start_date', { ascending: true });
+          }
           if (response.data) setEvents(response.data);
           break;
       }
@@ -184,10 +377,12 @@ const JabalpurPage = () => {
     }
   };
 
-  // Fetch data when tab changes
+  // Fetch data when tab changes or cityId is available
   useEffect(() => {
-    fetchData();
-  }, [selectedTab]);
+    if (selectedTab === 'Attractions' || cityId !== null) {
+      fetchData();
+    }
+  }, [selectedTab, cityId]);
 
   // Get current data based on selected tab
   const getCurrentData = () => {
@@ -229,6 +424,12 @@ const JabalpurPage = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
+              <button 
+                onClick={fetchData}
+                className="mt-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         </div>
@@ -239,6 +440,7 @@ const JabalpurPage = () => {
       return (
         <div className="text-center py-12">
           <p className="text-gray-500">No {selectedTab.toLowerCase()} found for Jabalpur.</p>
+          <p className="text-sm text-gray-400 mt-2">Data might be available under a different city name or not yet added to the database.</p>
         </div>
       );
     }
@@ -269,7 +471,7 @@ const JabalpurPage = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold mb-4">{selectedTab}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`gap-6 ${selectedTab === 'Events' ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
               {currentData.map((item, index) => renderPlaceCard(item, index))}
             </div>
           </div>
@@ -277,11 +479,12 @@ const JabalpurPage = () => {
     }
   };
 
+  // Mock data for UI elements
   const quickStats = [
     { icon: <MapPin className="h-5 w-5" />, label: 'Best Time', value: 'Oct-Mar' },
     { icon: <Sun className="h-5 w-5" />, label: 'Climate', value: 'Tropical' },
     { icon: <Users className="h-5 w-5" />, label: 'Population', value: '1.5M' },
-  ] as const;
+  ];
 
   const bestTimeToVisit = [
     { 
@@ -381,6 +584,7 @@ const JabalpurPage = () => {
                   </div>
                 </div>
               </div>
+
 
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
