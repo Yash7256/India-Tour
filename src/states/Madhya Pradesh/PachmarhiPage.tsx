@@ -41,13 +41,7 @@ import {
   Droplets,
   Wind,
   Eye,
-  Thermometer,
-  Search,
-  X,
-  Clock,
-  Heart,
-  Share2,
-  Navigation
+  Thermometer
 } from 'lucide-react';
 import { supabase } from "../../lib/supabase";
 
@@ -123,11 +117,7 @@ interface Event extends BaseItem {
   img_url?: string;
 }
 
-// Define filter and sort types
-type Category = 'All' | 'Historical' | 'Natural' | 'Religious' | 'Adventure' | 'Cultural';
-type SortOption = 'featured' | 'name-asc' | 'name-desc' | 'rating-desc' | 'rating-asc';
-
-const JabalpurPage = () => {
+const PachmarhiPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('Attractions');
   const [places, setPlaces] = useState<Place[]>([]);
@@ -136,12 +126,9 @@ const JabalpurPage = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cityId, setCityId] = useState<string>('jabalpur-mp');
+  const [cityId, setCityId] = useState<string>('pachmarhi-mp');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>(['All']);
-  const [sortBy, setSortBy] = useState<SortOption>('featured');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Helper function to get city ID
   const getCityId = async () => {
@@ -149,7 +136,7 @@ const JabalpurPage = () => {
       const { data, error } = await supabase
         .from('cities')
         .select('id')
-        .eq('name', 'Jabalpur')
+        .eq('name', 'PACHMARHI')
         .eq('state', 'Madhya Pradesh')
         .single();
 
@@ -176,9 +163,9 @@ const JabalpurPage = () => {
         return;
       }
       
-      // Coordinates for Jabalpur
-      const lat = 23.1815;
-      const lon = 79.9864;
+      // Coordinates for Pachmarhi
+      const lat = 22.4675;
+      const lon = 78.4333;
       const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
       
       if (!apiKey) {
@@ -265,23 +252,9 @@ const JabalpurPage = () => {
     fetchWeather();
   }, []);
 
-  // Helper function to toggle favorite
-  const toggleFavorite = (id: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(id)) {
-      newFavorites.delete(id);
-    } else {
-      newFavorites.add(id);
-    }
-    setFavorites(newFavorites);
-    // Save to localStorage for persistence
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)));
-  };
-
   // Helper function to render a place card
   const renderPlaceCard = (item: Place | LocalSpecialty | TransportOption | Event, index: number) => {
     let imageUrl = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
-    const isFavorite = favorites.has(item.id);
     
     // Check for image sources in order of preference
     if ('img_url' in item && item.img_url) {
@@ -294,96 +267,45 @@ const JabalpurPage = () => {
       imageUrl = item.image;
     }
     
-    // Get category or use a default
-    const category = ('category' in item && item.category) || 'Attraction';
-    const rating = 'rating' in item ? Number(item.rating) : null;
-    
     return (
-      <div key={`${item.id}-${index}`} className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 relative">
-        {/* Featured Ribbon */}
-        {index < 3 && selectedTab === 'Attractions' && (
-          <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded z-10">
-            Featured
-          </div>
-        )}
-        
-        {/* Favorite Button */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(item.id);
+      <div key={`${item.id}-${index}`} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+        <img 
+          src={imageUrl}
+          alt={item.name}
+          className="w-full h-48 object-cover"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
           }}
-          className="absolute top-2 right-2 p-2 bg-white/80 rounded-full z-10 hover:bg-white transition-colors"
-          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <Star 
-            className={`h-5 w-5 ${isFavorite ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-          />
-        </button>
-        
-        {/* Image */}
-        <div className="relative overflow-hidden h-48">
-          <img 
-            src={imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-            <button className="text-white text-sm font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full transition-colors">
-              View Details
-            </button>
-          </div>
-        </div>
-        
-        {/* Card Content */}
+        />
         <div className="p-4">
-          <div className="flex justify-between items-start">
-            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
-            {rating !== null && (
-              <div className="flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
-                <Star className="h-3 w-3 fill-current mr-1" />
-                {rating.toFixed(1)}
-              </div>
-            )}
-          </div>
-          
-          {/* Category Tags */}
-          <div className="mt-2 flex flex-wrap gap-1">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {category}
-            </span>
-            {'entryFee' in item && item.entryFee && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {item.entryFee === '0' || item.entryFee?.toLowerCase() === 'free' ? 'Free Entry' : `Entry: ${item.entryFee}`}
-              </span>
-            )}
-          </div>
-          
-          {/* Description */}
+          <h3 className="text-lg font-semibold">{item.name}</h3>
           {item.description && (
-            <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
+            <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.description}</p>
           )}
-          
-          {/* Additional Info */}
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              {'time' in item && item.time && (
-                <span className="flex items-center">
-                  <Clock className="h-3.5 w-3.5 mr-1" />
-                  {item.time}
-                </span>
-              )}
-              {'distance' in item && item.distance && (
-                <span className="flex items-center">
-                  <MapPin className="h-3.5 w-3.5 mr-1" />
-                  {item.distance} km away
-                </span>
-              )}
+          {'rating' in item && item.rating && (
+            <div className="mt-3 flex items-center">
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+              <span className="ml-1 text-sm">{item.rating}</span>
             </div>
-          </div>
+          )}
+          {'category' in item && item.category && (
+            <span className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full mt-2">
+              {item.category}
+            </span>
+          )}
+          {'price_range' in item && item.price_range && (
+            <div className="mt-2">
+              <span className="text-xs text-gray-500">Price: </span>
+              <span className="text-xs font-medium text-green-600">{item.price_range}</span>
+            </div>
+          )}
+          {'start_date' in item && item.start_date && (
+            <div className="mt-2">
+              <span className="text-xs text-gray-500">Date: </span>
+              <span className="text-xs font-medium">{new Date(item.start_date).toLocaleDateString()}</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -403,7 +325,7 @@ const JabalpurPage = () => {
             .from('places')
             .select('*')
             .eq('state', 'Madhya Pradesh')
-            .eq('city', 'Jabalpur')
+            .eq('city', 'Pachmarhi')
             .order('rating', { ascending: false });
           if (response.data) setPlaces(response.data);
           break;
@@ -413,13 +335,13 @@ const JabalpurPage = () => {
             setIsLoading(true);
             setError(null);
             
-            console.log('Fetching local specialties for Jabalpur...');
+            console.log('Fetching local specialties for Pachmarhi...');
             
             // First try exact match with city and state
             const { data: specialties, error } = await supabase
               .from('local_specialties')
               .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-              .eq('city', 'Jabalpur')
+              .eq('city', 'Pachmarhi')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
             
@@ -442,7 +364,7 @@ const JabalpurPage = () => {
               const { data: caseInsensitiveResults } = await supabase
                 .from('local_specialties')
                 .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-                .or('city.ilike.%jabalpur%,state.ilike.%madhya pradesh%')
+                .or('city.ilike.%pachmarhi%,state.ilike.%madhya pradesh%')
                 .order('name', { ascending: true });
                 
               if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
@@ -453,7 +375,7 @@ const JabalpurPage = () => {
                 })));
               } else {
                 console.log('No local specialties found in database');
-                setError('No local specialties found for Jabalpur.');
+                setError('No local specialties found for Pachmarhi.');
                 setLocalSpecialties([]);
               }
             }
@@ -472,7 +394,7 @@ const JabalpurPage = () => {
             response = await supabase
               .from('transport_options')
               .select('*')
-              .eq('city', 'Jabalpur')
+              .eq('city', 'PACHMARHI')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
               
@@ -492,9 +414,9 @@ const JabalpurPage = () => {
                 
               if (response.data) {
                 response.data = response.data.filter((item: TransportOption) => 
-                  item.city?.toLowerCase().includes('jabalpur') ||
-                  item.name?.toLowerCase().includes('jabalpur') ||
-                  item.description?.toLowerCase().includes('jabalpur')
+                  item.city?.toLowerCase().includes('pachmarhi') ||
+                  item.name?.toLowerCase().includes('pachmarhi') ||
+                  item.description?.toLowerCase().includes('pachmarhi')
                 );
               }
             }
@@ -516,7 +438,7 @@ const JabalpurPage = () => {
             response = await supabase
               .from('events')
               .select('*')
-              .eq('city', 'Jabalpur')
+              .eq('city', 'PACHMARHI')
               .eq('state', 'Madhya Pradesh')
               .gte('end_date', today)
               .order('start_date', { ascending: true });
@@ -539,9 +461,9 @@ const JabalpurPage = () => {
                 
               if (response.data) {
                 response.data = response.data.filter((item: Event) => 
-                  item.city?.toLowerCase().includes('jabalpur') ||
-                  item.location?.toLowerCase().includes('jabalpur') ||
-                  item.name?.toLowerCase().includes('jabalpur')
+                  item.city?.toLowerCase().includes('pachmarhi') ||
+                  item.location?.toLowerCase().includes('pachmarhi') ||
+                  item.name?.toLowerCase().includes('pachmarhi')
                 );
               }
             }
@@ -594,86 +516,6 @@ const JabalpurPage = () => {
 
   const currentData = getCurrentData();
 
-  // Filter and sort attractions
-  const getFilteredAndSortedAttractions = () => {
-    let filtered = [...places];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(place => 
-        place.name.toLowerCase().includes(query) ||
-        (place.description?.toLowerCase().includes(query) ?? false) ||
-        (place.category?.toLowerCase().includes(query) ?? false)
-      );
-    }
-    
-    // Apply category filter
-    if (!selectedCategories.includes('All')) {
-      filtered = filtered.filter(place => 
-        selectedCategories.some(cat => 
-          place.category?.toLowerCase() === cat.toLowerCase()
-        )
-      );
-    }
-    
-    // Apply sorting
-    return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name-asc':
-          return a.name.localeCompare(b.name);
-        case 'name-desc':
-          return b.name.localeCompare(a.name);
-        case 'rating-desc':
-          return (Number(b.rating) || 0) - (Number(a.rating) || 0);
-        case 'rating-asc':
-          return (Number(a.rating) || 0) - (Number(b.rating) || 0);
-        case 'featured':
-        default:
-          // Featured items first, then by rating
-          const aFeatured = a.featured ? 1 : 0;
-          const bFeatured = b.featured ? 1 : 0;
-          if (aFeatured !== bFeatured) return bFeatured - aFeatured;
-          return (Number(b.rating) || 0) - (Number(a.rating) || 0);
-      }
-    });
-  };
-
-  // Get unique categories from places
-  const getAvailableCategories = () => {
-    const categories = new Set<string>();
-    places.forEach(place => {
-      if (place.category) {
-        categories.add(place.category);
-      }
-    });
-    return Array.from(categories).sort();
-  };
-
-  // Toggle category selection
-  const toggleCategory = (category: Category) => {
-    if (category === 'All') {
-      setSelectedCategories(['All']);
-    } else {
-      setSelectedCategories(prev => {
-        const newSelection = prev.includes('All') 
-          ? [category]
-          : prev.includes(category)
-            ? prev.filter(c => c !== category)
-            : [...prev, category];
-        return newSelection.length === 0 ? ['All'] : newSelection;
-      });
-    }
-  };
-
-  // Load favorites from localStorage on component mount
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
-    }
-  }, []);
-
   // Render content based on selected tab
   const renderContent = () => {
     if (isLoading) {
@@ -711,7 +553,7 @@ const JabalpurPage = () => {
     if (currentData.length === 0) {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">No {selectedTab.toLowerCase()} found for Jabalpur.</p>
+          <p className="text-gray-500">No {selectedTab.toLowerCase()} found for Pachmarhi.</p>
           <p className="text-sm text-gray-400 mt-2">Data might be available under a different city name or not yet added to the database.</p>
         </div>
       );
@@ -719,120 +561,26 @@ const JabalpurPage = () => {
 
     switch (selectedTab) {
       case 'Attractions':
-        const filteredAttractions = getFilteredAndSortedAttractions();
-        const availableCategories = getAvailableCategories();
-        
         return (
-          <div className="space-y-6">
-            {/* Search and Filter Bar */}
-            <div className="bg-white rounded-xl shadow-sm p-4 sticky top-4 z-10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                {/* Search Input */}
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Search attractions by name, type, or keyword..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    </button>
-                  )}
+          <div className="space-y-8">
+            {currentData.length > 3 && (
+              <section>
+                <h2 className="text-2xl font-bold mb-4">Top Attractions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {currentData.slice(0, 3).map((item, index) => renderPlaceCard(item, index))}
                 </div>
-                
-                {/* Sort Dropdown */}
-                <div className="w-full md:w-auto">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="w-full md:w-auto block px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="featured">Featured First</option>
-                    <option value="name-asc">Name (A-Z)</option>
-                    <option value="name-desc">Name (Z-A)</option>
-                    <option value="rating-desc">Highest Rated</option>
-                    <option value="rating-asc">Lowest Rated</option>
-                  </select>
-                </div>
-              </div>
-              
-              {/* Category Filters */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  key="all"
-                  onClick={() => toggleCategory('All')}
-                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                    selectedCategories.includes('All')
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  All
-                </button>
-                {availableCategories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() => toggleCategory(category as Category)}
-                    className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                      selectedCategories.includes(category as Category) || selectedCategories.includes('All')
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Results Count */}
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-gray-600">
-                Showing <span className="font-medium">{filteredAttractions.length}</span> attractions
-              </p>
-              {selectedCategories.length > 0 && !selectedCategories.includes('All') && (
-                <button
-                  onClick={() => setSelectedCategories(['All'])}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  <X className="h-4 w-4 mr-1" /> Clear filters
-                </button>
-              )}
-            </div>
-            
-            {/* Attractions Grid */}
-            {filteredAttractions.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredAttractions.map((item, index) => renderPlaceCard(item, index))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-xl">
-                <Search className="h-12 w-12 mx-auto text-gray-300" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No attractions found</h3>
-                <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria</p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategories(['All']);
-                  }}
-                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Clear all filters
-                </button>
-              </div>
+              </section>
             )}
+            <section>
+              <h2 className="text-2xl font-bold mb-4">
+                {currentData.length > 3 ? 'All Attractions' : 'Attractions'}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentData.map((item, index) => renderPlaceCard(item, index))}
+              </div>
+            </section>
           </div>
         );
-        
       default:
         return (
           <div className="space-y-6">
@@ -906,8 +654,8 @@ const JabalpurPage = () => {
      {/* Hero Section */}
      <div className="relative h-96 overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=1920&h=1080&fit=crop"
-          alt="Jabalpur"
+          src="https://i.ibb.co/Q7KzgjFj/pach.png"
+          alt="Pachmarhi"
           className="w-full h-full object-cover blur-sm"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/70"></div>
@@ -915,7 +663,7 @@ const JabalpurPage = () => {
           <div className="text-center text-white max-w-4xl px-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               <h1 className="text-6xl md:text-7xl font-bold mb-4 tracking-wide drop-shadow-2xl">
-                JABALPUR
+                PACHMARHI
               </h1>
               <div className="w-24 h-1 bg-orange-400 mx-auto mb-4 rounded-full"></div>
               <p className="text-xl md:text-2xl font-light tracking-wider opacity-90">
@@ -937,9 +685,9 @@ const JabalpurPage = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* About Section */}
             <section className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-2xl font-bold mb-4">About Jabalpur</h2>
+              <h2 className="text-2xl font-bold mb-4">About PACHMARHI</h2>
               <p className="text-gray-600 mb-6">
-                Jabalpur, known as the "Marble City," is a major city in Madhya Pradesh famous for its stunning marble rocks at Bhedaghat, the thundering Dhuandhar Falls, and rich cultural heritage. The city serves as a gateway to several national parks and wildlife sanctuaries.
+              Pachmarhi, known as the "Queen of Satpura," is a beautiful hill station in Madhya Pradesh celebrated for its lush greenery, waterfalls, caves, and serene landscapes. It is the only hill station of the state and part of the UNESCO Biosphere Reserve
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -958,7 +706,7 @@ const JabalpurPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Climate</h3>
-                    <p className="text-gray-600">Humid Sub-Tropical</p>
+                    <p className="text-gray-600">Sub-Tropical Highland</p>
                   </div>
                 </div>
               </div>
@@ -1011,14 +759,14 @@ const JabalpurPage = () => {
               <h3 className="text-xl font-bold mb-4">Location</h3>
               <div className="bg-gray-100 rounded-lg h-48 relative overflow-hidden mb-4">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58901.64398088593!2d79.9464581!3d23.1815217!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3981ae072e7bee8b%3A0x944a4a1e96cd04a3!2sJabalpur%2C%20Madhya%20Pradesh!5e0!3m2!1sen!2sin!4v1634567890123!5m2!1sen!2sin"
+                  src="https://www.google.com/maps?q=Pachmarhi,+Madhya+Pradesh,+India&output=embed"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
                   allowFullScreen={true}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Jabalpur Map"
+                  title="Pachmarhi Map"
                   className="rounded-lg"
                 ></iframe>
               </div>
@@ -1181,4 +929,4 @@ const JabalpurPage = () => {
   );
 };
 
-export default JabalpurPage;
+export default PachmarhiPage;

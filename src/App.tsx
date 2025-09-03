@@ -11,7 +11,7 @@ import Destinations from './pages/Destinations';
 import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
 import BhopalPage from './states/Madhya Pradesh/BhopalPage';
-import PachmarhiPage from './pages/Pachmarhipage';
+import PachmarhiPage from './states/Madhya Pradesh/PachmarhiPage';
 import NeemuchPage from './pages/NeemuchPage';
 import SheopurPage from './pages/SheopurPage';
 import SatnaPage from './pages/SatnaPage';
