@@ -38,7 +38,10 @@ import {
   Users,
   Sun,
   Calendar,
-  Clock
+  Droplets,
+  Wind,
+  Eye,
+  Thermometer
 } from 'lucide-react';
 import { supabase } from "../../lib/supabase";
 
@@ -69,6 +72,17 @@ interface Place extends BaseItem {
   accessibility?: boolean;
 }
 
+interface WeatherData {
+  temperature: number;
+  description: string;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  visibility: string;
+  icon: string;
+  lastUpdated: string;
+}
+
 interface LocalSpecialty {
   id: string;
   name: string;
@@ -80,9 +94,9 @@ interface LocalSpecialty {
   created_at: string;
   updated_at: string;
   city_id: string | null;
-  // Optional fields that might be present in some records
   country?: string;
   rating?: string | number | null;
+  lastUpdated?: string; // Made optional with ?
 }
 
 interface TransportOption extends BaseItem {
@@ -107,12 +121,14 @@ const JabalpurPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('Attractions');
   const [places, setPlaces] = useState<Place[]>([]);
-  const [localSpecialties, setLocalSpecialties] = useState<LocalSpecialty[]>([]);
+  const [localSpecialties, setLocalSpecialties] = useState<Omit<LocalSpecialty, 'lastUpdated'>[]>([]);
   const [transportOptions, setTransportOptions] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cityId, setCityId] = useState<string>('jabalpur-mp'); 
+  const [cityId, setCityId] = useState<string>('jabalpur-mp');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
 
   // Helper function to get city ID
   const getCityId = async () => {
@@ -136,13 +152,104 @@ const JabalpurPage = () => {
     }
   };
 
-  // Initialize city ID on component mount
+  // Fetch weather data from OpenWeather API
+  const fetchWeather = async (forceRefresh = false) => {
+    try {
+      setWeatherLoading(true);
+      setError(null); // Clear any previous errors
+      
+      // If we have weather data and not forcing a refresh, keep the current data
+      if (weather && !forceRefresh) {
+        return;
+      }
+      
+      // Coordinates for Jabalpur
+      const lat = 23.1815;
+      const lon = 79.9864;
+      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error('OpenWeather API key is missing');
+      }
+      
+      // Add cache-busting parameter to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&_=${timestamp}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data?.weather?.[0] || !data?.main) {
+        throw new Error('Invalid weather data received');
+      }
+      
+      // Map OpenWeather API response to our weather state
+      const newWeather: WeatherData = {
+        temperature: Math.round(data.main.temp),
+        description: data.weather[0].description || 'Unknown',
+        feelsLike: Math.round(data.main.feels_like),
+        humidity: data.main.humidity,
+        windSpeed: Math.round((data.wind?.speed || 0) * 3.6), // Convert m/s to km/h
+        visibility: data.visibility ? (data.visibility / 1000).toFixed(1) : 'N/A',
+        icon: getWeatherIcon(data.weather[0].icon || '02d'),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      setWeather(newWeather);
+      
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      // Only show error if we don't have any weather data
+      if (!weather) {
+        setError('Failed to load weather data. Please try again.');
+      } else {
+        // If we have previous weather data, keep showing it but indicate the refresh failed
+        setError('Failed to update weather. Showing last available data.');
+      }
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+  
+  // Helper function to map OpenWeather icons to emojis
+  const getWeatherIcon = (iconCode: string) => {
+    const iconMap: Record<string, string> = {
+      '01d': '☀️', // clear sky (day)
+      '01n': '🌙', // clear sky (night)
+      '02d': '⛅', // few clouds (day)
+      '02n': '☁️', // few clouds (night)
+      '03d': '☁️', // scattered clouds
+      '03n': '☁️',
+      '04d': '☁️', // broken clouds
+      '04n': '☁️',
+      '09d': '🌧️', // shower rain
+      '09n': '🌧️',
+      '10d': '🌦️', // rain (day)
+      '10n': '🌧️', // rain (night)
+      '11d': '⛈️', // thunderstorm
+      '11n': '⛈️',
+      '13d': '❄️', // snow
+      '13n': '❄️',
+      '50d': '🌫️', // mist
+      '50n': '🌫️',
+    };
+    
+    return iconMap[iconCode] || '🌡️';
+  };
+
+  // Initialize city ID and fetch weather on component mount
   useEffect(() => {
     const initializeCityId = async () => {
       const id = await getCityId();
       setCityId(id);
     };
     initializeCityId();
+    fetchWeather();
   }, []);
 
   // Helper function to render a place card
@@ -246,7 +353,10 @@ const JabalpurPage = () => {
             
             if (specialties && specialties.length > 0) {
               console.log(`Found ${specialties.length} local specialties`);
-              setLocalSpecialties(specialties);
+        setLocalSpecialties(specialties.map(item => ({
+        ...item,
+        lastUpdated: new Date().toISOString()
+      })));
             } else {
               console.log('No local specialties found with exact match, trying case-insensitive search...');
               
@@ -259,10 +369,14 @@ const JabalpurPage = () => {
                 
               if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
                 console.log(`Found ${caseInsensitiveResults.length} local specialties with case-insensitive search`);
-                setLocalSpecialties(caseInsensitiveResults);
+                setLocalSpecialties(caseInsensitiveResults.map(item => ({
+                  ...item,
+                  lastUpdated: new Date().toISOString()
+                })));
               } else {
-                console.log('No local specialties found');
-                setError('No local specialties found for this location.');
+                console.log('No local specialties found in database');
+                setError('No local specialties found for Jabalpur.');
+                setLocalSpecialties([]);
               }
             }
           } catch (err) {
@@ -489,21 +603,21 @@ const JabalpurPage = () => {
   const bestTimeToVisit = [
     { 
       month: 'Oct - Feb', 
-      description: 'Pleasant weather, ideal for sightseeing',
+      description: 'Best for sightseeing, wildlife safaris, boating at Bhedaghat, and outdoor activities',
       icon: '🌤️',
       temp: '20-30°C'
     },
     { 
-      month: 'Mar - May', 
-      description: 'Hot weather, early mornings and evenings are better',
+      month: 'April - June', 
+      description: 'Hot weather, Not recommended',
       icon: '☀️',
-      temp: '25-35°C'
+      temp: '35°C +'
     },
     { 
-      month: 'Jun - Sep', 
+      month: 'July - Sep', 
       description: 'Monsoon season, lush green surroundings',
       icon: '🌧️',
-      temp: '24-32°C'
+      temp: '21-32°C'
     }
   ];
 
@@ -571,7 +685,7 @@ const JabalpurPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Best Time to Visit</h3>
-                    <p className="text-gray-600">October to February</p>
+                    <p className="text-gray-600">July to September</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -580,7 +694,7 @@ const JabalpurPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Climate</h3>
-                    <p className="text-gray-600">Tropical</p>
+                    <p className="text-gray-600">Humid Sub-Tropical</p>
                   </div>
                 </div>
               </div>
@@ -631,41 +745,147 @@ const JabalpurPage = () => {
             {/* Location Card */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-xl font-bold mb-4">Location</h3>
-              <div className="bg-gray-200 rounded-lg h-48 flex items-center justify-center mb-4">
-                <div className="text-center text-gray-500">
-                  <MapPin className="h-12 w-12 mx-auto mb-2" />
-                  <p>Interactive map will be displayed here</p>
-                  <p className="text-sm">Google Maps integration</p>
-                </div>
+              <div className="bg-gray-100 rounded-lg h-48 relative overflow-hidden mb-4">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58901.64398088593!2d79.9464581!3d23.1815217!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3981ae072e7bee8b%3A0x944a4a1e96cd04a3!2sJabalpur%2C%20Madhya%20Pradesh!5e0!3m2!1sen!2sin!4v1634567890123!5m2!1sen!2sin"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen={true}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Jabalpur Map"
+                  className="rounded-lg"
+                ></iframe>
               </div>
-              <p className="text-gray-600 text-sm">Coordinates: 23.1815° N, 79.9864° E</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Coordinates:</strong> 23.1815° N, 79.9864° E</p>
+                <p><strong>State:</strong> Madhya Pradesh, India</p>
+                <p><strong>Elevation:</strong> 411 meters (1,348 ft)</p>
+              </div>
             </div>
 
             {/* Current Weather */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-xl font-bold mb-4">Current Weather</h3>
-              <div className="text-center">
-                <div className="text-6xl mb-2">☀️</div>
-                <div className="text-3xl font-bold text-gray-800">28°C</div>
-                <p className="text-gray-600">Sunny</p>
-                <p className="text-sm text-gray-500 mt-2">Perfect weather for sightseeing!</p>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Current Weather</h3>
+                <button
+                  onClick={() => fetchWeather(true)}
+                  disabled={weatherLoading}
+                  className={`p-2 rounded-full ${weatherLoading ? 'text-gray-400' : 'text-gray-600 hover:bg-gray-100'}`}
+                  aria-label="Refresh weather data"
+                >
+                  {weatherLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  )}
+                </button>
               </div>
-            </div>
 
-            {/* Quick Stats */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-xl font-bold mb-4">Quick Stats</h3>
-              <div className="space-y-4">
-                {quickStats.map((stat, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {stat.icon}
-                      <span className="text-gray-700">{stat.label}</span>
+              {weather ? (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <div className="text-5xl font-bold text-gray-800">
+                        {weather.temperature}°
+                        {weatherLoading && (
+                          <span className="ml-2 inline-block">
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-500 inline" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-600 capitalize">{weather.description}</p>
+                      <p className="text-sm text-gray-500">Feels like {weather.feelsLike}°</p>
                     </div>
-                    <span className="font-bold text-blue-600">{stat.value}</span>
+                    <div className="text-6xl">{weather.icon}</div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Droplets className="h-5 w-5 text-blue-500" />
+                        <span>Humidity</span>
+                      </div>
+                      <p className="text-lg font-semibold mt-1">{weather.humidity}%</p>
+                    </div>
+                    
+                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Wind className="h-5 w-5 text-green-500" />
+                        <span>Wind</span>
+                      </div>
+                      <p className="text-lg font-semibold mt-1">{weather.windSpeed} km/h</p>
+                    </div>
+                    
+                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Eye className="h-5 w-5 text-purple-500" />
+                        <span>Visibility</span>
+                      </div>
+                      <p className="text-lg font-semibold mt-1">{weather.visibility} km</p>
+                    </div>
+                    
+                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Thermometer className="h-5 w-5 text-orange-500" />
+                        <span>Feels Like</span>
+                      </div>
+                      <p className="text-lg font-semibold mt-1">{weather.feelsLike}°</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500">
+                      {weather.lastUpdated ? (
+                        `Last updated: ${new Date(weather.lastUpdated).toLocaleTimeString()}`
+                      ) : (
+                        'Loading weather data...'
+                      )}
+                    </p>
+                    {error && (
+                      <p className="text-xs text-red-500 mt-1">{error}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-white/50 rounded-xl">
+                  <div className="text-4xl mb-2">🌤️</div>
+                  <p className="text-gray-600 mb-3">Weather data unavailable</p>
+                  <button 
+                    onClick={() => fetchWeather(true)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center mx-auto"
+                  >
+                    <svg 
+                      className="h-4 w-4 mr-2" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Popular This Week */}
