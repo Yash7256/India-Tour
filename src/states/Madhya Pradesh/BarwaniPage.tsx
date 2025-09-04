@@ -41,8 +41,7 @@ import {
   Droplets,
   Wind,
   Eye,
-  Thermometer
-,
+  Thermometer,
   Search,
   X,
   Clock,
@@ -488,14 +487,6 @@ const BarwaniPage = () => {
     }
   }, [selectedTab, cityId]);
 
-  // Load favorites from localStorage on component mount
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
-    }
-  }, []);
-
   // Get current data based on selected tab
   const getCurrentData = () => {
     switch (selectedTab) {
@@ -513,6 +504,14 @@ const BarwaniPage = () => {
   };
 
   const currentData = getCurrentData();
+
+  // Load favorites from localStorage on component mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
 
   // Filter and sort attractions
   const getFilteredAndSortedAttractions = () => {

@@ -42,6 +42,13 @@ import {
   Wind,
   Eye,
   Thermometer
+,
+  Search,
+  X,
+  Clock,
+  Heart,
+  Share2,
+  Navigation
 } from 'lucide-react';
 import { supabase } from "../../lib/supabase";
 
@@ -70,6 +77,8 @@ interface Place extends BaseItem {
   entryFee?: string;
   time?: string;
   accessibility?: boolean;
+  featured?: boolean;
+  distance?: number;
 }
 
 interface WeatherData {
@@ -117,6 +126,10 @@ interface Event extends BaseItem {
   img_url?: string;
 }
 
+// Define filter and sort types
+type Category = 'All' | 'Historical' | 'Natural' | 'Religious' | 'Adventure' | 'Cultural';
+type SortOption = 'featured' | 'name-asc' | 'name-desc' | 'rating-desc' | 'rating-asc';
+
 const DharPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('Attractions');
@@ -129,6 +142,9 @@ const DharPage = () => {
   const [cityId, setCityId] = useState<string>('dhar-mp');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>(['All']);
+  const [sortBy, setSortBy] = useState<SortOption>('featured');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Helper function to get city ID
   const getCityId = async () => {
@@ -252,6 +268,19 @@ const DharPage = () => {
     fetchWeather();
   }, []);
 
+  // Helper function to toggle favorite
+  const toggleFavorite = (id: string) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(id)) {
+      newFavorites.delete(id);
+    } else {
+      newFavorites.add(id);
+    }
+    setFavorites(newFavorites);
+    // Save to localStorage for persistence
+    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)));
+  };
+
   // Helper function to render a place card
   const renderPlaceCard = (item: Place | LocalSpecialty | TransportOption | Event, index: number) => {
     let imageUrl = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
@@ -266,46 +295,98 @@ const DharPage = () => {
     } else if ('image' in item && item.image) {
       imageUrl = item.image;
     }
+    const isFavorite = favorites.has(item.id);
+    
+    // Get category or use a default
+    const category = ('category' in item && item.category) || 'Attraction';
+    const rating = 'rating' in item ? Number(item.rating) : null;
     
     return (
-      <div key={`${item.id}-${index}`} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-        <img 
-          src={imageUrl}
-          alt={item.name}
-          className="w-full h-48 object-cover"
-          onError={(e) => {
-            // Fallback to placeholder if image fails to load
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
+      <div key={`${item.id}-${index}`} className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 relative">
+        {/* Featured Ribbon */}
+        {index < 3 && selectedTab === 'Attractions' && (
+          <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded z-10">
+            Featured
+          </div>
+        )}
+        
+        {/* Favorite Button */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(item.id);
           }}
-        />
+          className="absolute top-2 right-2 p-2 bg-white/80 rounded-full z-10 hover:bg-white transition-colors"
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Star 
+            className={`h-5 w-5 ${isFavorite ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+          />
+        </button>
+        
+        {/* Image */}
+        <div className="relative overflow-hidden h-48">
+          <img 
+            src={imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop&crop=center';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+            <button className="text-white text-sm font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full transition-colors">
+              View Details
+            </button>
+          </div>
+        </div>
+        
+        {/* Card Content */}
         <div className="p-4">
-          <h3 className="text-lg font-semibold">{item.name}</h3>
-          {item.description && (
-            <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.description}</p>
-          )}
-          {'rating' in item && item.rating && (
-            <div className="mt-3 flex items-center">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span className="ml-1 text-sm">{item.rating}</span>
-            </div>
-          )}
-          {'category' in item && item.category && (
-            <span className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full mt-2">
-              {item.category}
+          <div className="flex justify-between items-start">
+            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
+            {rating !== null && (
+              <div className="flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
+                <Star className="h-3 w-3 fill-current mr-1" />
+                {rating.toFixed(1)}
+              </div>
+            )}
+          </div>
+          
+          {/* Category Tags */}
+          <div className="mt-2 flex flex-wrap gap-1">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {category}
             </span>
+            {'entryFee' in item && item.entryFee && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {item.entryFee === '0' || item.entryFee?.toLowerCase() === 'free' ? 'Free Entry' : `Entry: ${item.entryFee}`}
+              </span>
+            )}
+          </div>
+          
+          {/* Description */}
+          {item.description && (
+            <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
           )}
-          {'price_range' in item && item.price_range && (
-            <div className="mt-2">
-              <span className="text-xs text-gray-500">Price: </span>
-              <span className="text-xs font-medium text-green-600">{item.price_range}</span>
+          
+          {/* Additional Info */}
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              {'time' in item && item.time && (
+                <span className="flex items-center">
+                  <Clock className="h-3.5 w-3.5 mr-1" />
+                  {item.time}
+                </span>
+              )}
+              {'distance' in item && item.distance && (
+                <span className="flex items-center">
+                  <MapPin className="h-3.5 w-3.5 mr-1" />
+                  {item.distance} km away
+                </span>
+              )}
             </div>
-          )}
-          {'start_date' in item && item.start_date && (
-            <div className="mt-2">
-              <span className="text-xs text-gray-500">Date: </span>
-              <span className="text-xs font-medium">{new Date(item.start_date).toLocaleDateString()}</span>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -406,6 +487,14 @@ const DharPage = () => {
     }
   }, [selectedTab, cityId]);
 
+  // Load favorites from localStorage on component mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
+
   // Get current data based on selected tab
   const getCurrentData = () => {
     switch (selectedTab) {
@@ -423,6 +512,78 @@ const DharPage = () => {
   };
 
   const currentData = getCurrentData();
+
+  // Filter and sort attractions
+  const getFilteredAndSortedAttractions = () => {
+    let filtered = [...places];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(place => 
+        place.name.toLowerCase().includes(query) ||
+        (place.description?.toLowerCase().includes(query) ?? false) ||
+        (place.category?.toLowerCase().includes(query) ?? false)
+      );
+    }
+    
+    // Apply category filter
+    if (!selectedCategories.includes('All')) {
+      filtered = filtered.filter(place => 
+        selectedCategories.some(cat => 
+          place.category?.toLowerCase() === cat.toLowerCase()
+        )
+      );
+    }
+    
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'rating-desc':
+          return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+        case 'rating-asc':
+          return (Number(a.rating) || 0) - (Number(b.rating) || 0);
+        case 'featured':
+        default:
+          // Featured items first, then by rating
+          const aFeatured = a.featured ? 1 : 0;
+          const bFeatured = b.featured ? 1 : 0;
+          if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+          return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+      }
+    });
+  };
+
+  // Get unique categories from places
+  const getAvailableCategories = () => {
+    const categories = new Set<string>();
+    places.forEach(place => {
+      if (place.category) {
+        categories.add(place.category);
+      }
+    });
+    return Array.from(categories).sort();
+  };
+
+  // Toggle category selection
+  const toggleCategory = (category: Category) => {
+    if (category === 'All') {
+      setSelectedCategories(['All']);
+    } else {
+      setSelectedCategories(prev => {
+        const newSelection = prev.includes('All') 
+          ? [category]
+          : prev.includes(category)
+            ? prev.filter(c => c !== category)
+            : [...prev, category];
+        return newSelection.length === 0 ? ['All'] : newSelection;
+      });
+    }
+  };
 
   // Render content based on selected tab
   const renderContent = () => {
@@ -469,24 +630,85 @@ const DharPage = () => {
 
     switch (selectedTab) {
       case 'Attractions':
+        const filteredAttractions = getFilteredAndSortedAttractions();
+        const availableCategories = getAvailableCategories();
+        
         return (
-          <div className="space-y-8">
-            {currentData.length > 3 && (
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Top Attractions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {currentData.slice(0, 3).map((item, index) => renderPlaceCard(item, index))}
+          <div className="space-y-6">
+            {/* Search and Filter Bar */}
+            <div className="bg-white rounded-xl shadow-sm p-4 sticky top-4 z-10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Search attractions by name, type, or keyword..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
                 </div>
-              </section>
-            )}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">
-                {currentData.length > 3 ? 'All Attractions' : 'Attractions'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {currentData.map((item, index) => renderPlaceCard(item, index))}
+                
+                {/* Sort Dropdown */}
+                <div className="w-full md:w-auto">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="w-full md:w-auto block px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="featured">Featured First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="rating-desc">Highest Rated</option>
+                    <option value="rating-asc">Lowest Rated</option>
+                  </select>
+                </div>
               </div>
-            </section>
+              
+              {/* Category Filters */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  key="all"
+                  onClick={() => toggleCategory('All')}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    selectedCategories.includes('All')
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+                {availableCategories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => toggleCategory(category as Category)}
+                    className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                      selectedCategories.includes(category as Category) || selectedCategories.includes('All')
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Attractions Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredAttractions.map((item, index) => renderPlaceCard(item, index))}
+            </div>
           </div>
         );
       default:
