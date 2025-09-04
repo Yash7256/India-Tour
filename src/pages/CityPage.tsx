@@ -1,28 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   MapPinIcon, 
   StarIcon, 
   CalendarIcon, 
-  ClockIcon, 
-  CurrencyDollarIcon,
   HeartIcon,
   ShareIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
+// Define the attraction type based on the data structure
+interface Attraction {
+  id: string;
+  name: string;
+  category: string;
+  images: string[];
+  rating: number;
+  description: string;
+  entryFee: string;
+  openingHours: string;
+  accessibility?: string;
+}
+
+// Type for the city data structure
+interface CityData {
+  id: string;
+  name: string;
+  state: string;
+  description: string;
+  bestTimeToVisit: string;
+  climate: string;
+  featuredImage: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  attractions: Attraction[];
+  localSpecialties?: any[];
+  specialties?: any[];
+  events?: any[];
+  transport?: any[];
+  transportation?: any[];
+  // Add other properties that might be used in the component
+  [key: string]: any; // For any additional dynamic properties
+}
+
 const CityPage: React.FC = () => {
   const { cityId } = useParams<{ cityId: string }>();
   const { getCityById } = useData();
   const { user, addToFavorites, removeFromFavorites, loading } = useAuth();
-  const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'attractions' | 'specialties' | 'events' | 'transport'>('attractions');
 
-  const city = cityId ? getCityById(cityId) : null;
+  const city = (cityId ? getCityById(cityId) : null) as CityData | null;
   const isFavorite = user?.favoriteDestinations.includes(cityId || '') || false;
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -31,9 +66,10 @@ const CityPage: React.FC = () => {
   if (!city) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">City not found</h2>
-          <Link to="/" className="text-orange-600 hover:text-orange-700">
+        <div className="text-center p-6">
+          <h1 className="text-2xl font-bold text-gray-900">City not found</h1>
+          <p className="mt-2 text-gray-600">The requested city could not be loaded.</p>
+          <Link to="/" className="mt-4 inline-block text-orange-700 hover:underline">
             ← Back to Home
           </Link>
         </div>
@@ -42,7 +78,7 @@ const CityPage: React.FC = () => {
   }
 
   const handleFavoriteToggle = () => {
-    if (!user || loading) return;
+    if (!user || loading || !city) return;
     
     if (isFavorite) {
       removeFromFavorites(city.id);
@@ -51,16 +87,76 @@ const CityPage: React.FC = () => {
     }
   };
 
+  // Define types for city data
+  interface LocalSpecialty {
+    id: string;
+    name: string;
+    image: string;
+    type: string;
+    description: string;
+  }
+
+  interface Transport {
+    id: string;
+    type: string;
+    name: string;
+    description: string;
+    routes?: string[];
+    approximateCost?: string;
+    bookingInfo?: string;
+  }
+
+  interface CityEvent {
+    id: string;
+    name: string;
+    image: string;
+    dateRange: string;
+    description: string;
+    specialAttractions: string[];
+  }
+
+  // Safely access optional arrays with proper typing and fallback to empty array
+  const localSpecialties = useMemo<LocalSpecialty[]>(
+    () => city?.localSpecialties || [],
+    [city?.localSpecialties]
+  );
+  
+  const transportation = useMemo<Transport[]>(
+    () => city?.transportation || city?.transport || [],
+    [city?.transportation, city?.transport]
+  );
+  
+  const events = useMemo<CityEvent[]>(
+    () => city?.events || [],
+    [city?.events]
+  );
+
+  // Handle tab changes
+  const handleTabChange = (tab: 'attractions' | 'specialties' | 'events' | 'transport') => {
+    setActiveTab(tab);
+  };
+
+  const viewOnMap = () => {
+    if (city?.coordinates) {
+      const { lat, lng } = city.coordinates;
+      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="relative h-96 overflow-hidden">
         <img
-          src={city.featuredImage}
+          src={city.featuredImage || 'https://via.placeholder.com/1200x500?text=City+Image'}
           alt={city.name}
           className="w-full h-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = 'https://via.placeholder.com/1200x500?text=Image+Not+Available';
+          }}
         />
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-40" />
         
         <div className="absolute inset-0 flex items-end">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8">
@@ -118,21 +214,25 @@ const CityPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">About {city.name}</h2>
                 <p className="text-gray-600 text-lg leading-relaxed mb-6">{city.description}</p>
                 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center space-x-3">
-                    <CalendarIcon className="h-6 w-6 text-orange-500" />
-                    <div>
-                      <p className="font-semibold text-gray-900">Best Time to Visit</p>
-                      <p className="text-gray-600">{city.bestTimeToVisit}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {city?.bestTimeToVisit && (
+                    <div className="flex items-start space-x-3">
+                      <CalendarIcon className="h-6 w-6 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Best Time to Visit</p>
+                        <p className="text-gray-600">{city.bestTimeToVisit}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🌡️</span>
-                    <div>
-                      <p className="font-semibold text-gray-900">Climate</p>
-                      <p className="text-gray-600">{city.climate}</p>
+                  )}
+                  {city?.climate && (
+                    <div className="flex items-start space-x-3">
+                      <span className="text-2xl mt-0.5 flex-shrink-0">🌡️</span>
+                      <div>
+                        <p className="font-semibold text-gray-900">Climate</p>
+                        <p className="text-gray-600">{city.climate}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -140,22 +240,22 @@ const CityPage: React.FC = () => {
               <div>
                 <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
                   {[
-                    { key: 'attractions', label: 'Attractions', icon: '🏛️' },
-                    { key: 'specialties', label: 'Local Specialties', icon: '🍛' },
-                    { key: 'events', label: 'Events', icon: '🎭' },
-                    { key: 'transport', label: 'Transport', icon: '🚗' }
+                    { key: 'attractions' as const, label: 'Attractions', icon: '🏛️' },
+                    { key: 'specialties' as const, label: 'Local Specialties', icon: '🍛' },
+                    { key: 'events' as const, label: 'Events', icon: '🎪' },
+                    { key: 'transport' as const, label: 'Transport', icon: '🚌' },
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setActiveTab(tab.key as any)}
-                      className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      onClick={() => handleTabChange(tab.key)}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                         activeTab === tab.key
                           ? 'bg-white text-orange-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          : 'text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <span>{tab.icon}</span>
-                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="mr-2">{tab.icon}</span>
+                      {tab.label}
                     </button>
                   ))}
                 </div>
@@ -164,150 +264,61 @@ const CityPage: React.FC = () => {
                 <div className="bg-white rounded-2xl shadow-lg p-8">
                   {activeTab === 'attractions' && (
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">Top Attractions</h3>
-                      <div className="space-y-6">
-                        {city.attractions.map((attraction) => (
-                          <div
-                            key={attraction.id}
-                            className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-gray-900">Top Attractions</h3>
+                        <div className="relative mt-3 sm:mt-0">
+                          <button
+                            className="flex items-center text-sm text-gray-600 hover:text-gray-900"
                           >
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <img
-                                src={attraction.images[0]}
-                                alt={attraction.name}
-                                className="w-full md:w-48 h-32 object-cover rounded-lg"
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between mb-2">
-                                  <h4 className="text-lg font-bold text-gray-900">{attraction.name}</h4>
-                                  <div className="flex items-center text-yellow-500">
-                                    <StarIcon className="h-4 w-4 fill-current" />
-                                    <span className="text-sm text-gray-600 ml-1">{attraction.rating}</span>
-                                  </div>
-                                </div>
-                                <p className="text-sm text-orange-600 mb-2">{attraction.category}</p>
-                                <p className="text-gray-600 mb-4">{attraction.description}</p>
-                                
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                                  <div className="flex items-center text-gray-600">
-                                    <CurrencyDollarIcon className="h-4 w-4 mr-1" />
-                                    {attraction.entryFee}
-                                  </div>
-                                  <div className="flex items-center text-gray-600">
-                                    <ClockIcon className="h-4 w-4 mr-1" />
-                                    {attraction.openingHours}
-                                  </div>
-                                  <div className="flex items-center text-gray-600">
-                                    <span className="mr-1">♿</span>
-                                    {attraction.accessibility}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'specialties' && (
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">Local Specialties</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {city.localSpecialties.map((specialty) => (
-                          <div key={specialty.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                            <img
-                              src={specialty.image}
-                              alt={specialty.name}
-                              className="w-full h-48 object-cover"
-                            />
-                            <div className="p-6">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-lg font-bold text-gray-900">{specialty.name}</h4>
-                                <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full capitalize">
-                                  {specialty.type}
-                                </span>
-                              </div>
-                              <p className="text-gray-600">{specialty.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'events' && (
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">Events & Festivals</h3>
-                      <div className="space-y-6">
-                        {city.events.map((event) => (
-                          <div key={event.id} className="border border-gray-200 rounded-xl p-6">
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <img
-                                src={event.image}
-                                alt={event.name}
-                                className="w-full md:w-48 h-32 object-cover rounded-lg"
-                              />
-                              <div className="flex-1">
-                                <h4 className="text-lg font-bold text-gray-900 mb-2">{event.name}</h4>
-                                <p className="text-orange-600 font-semibold mb-2">{event.dateRange}</p>
-                                <p className="text-gray-600 mb-4">{event.description}</p>
-                                <div className="mb-4">
-                                  <h5 className="font-semibold text-gray-900 mb-2">Special Attractions:</h5>
-                                  <div className="flex flex-wrap gap-2">
-                                    {event.specialAttractions.map((attraction, index) => (
-                                      <span
-                                        key={index}
-                                        className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                                      >
-                                        {attraction}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                            <FunnelIcon className="h-4 w-4 mr-1" />
+                            <span>Filter by Category</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {activeTab === 'transport' && (
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">Transportation Options</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {city.transportation.map((transport) => (
-                          <div key={transport.id} className="border border-gray-200 rounded-xl p-6">
-                            <div className="flex items-center mb-4">
-                              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
-                                <span className="text-lg">
-                                  {transport.type === 'bus' && '🚌'}
-                                  {transport.type === 'train' && '🚆'}
-                                  {transport.type === 'auto' && '🛺'}
-                                  {transport.type === 'taxi' && '🚕'}
-                                  {transport.type === 'metro' && '🚇'}
-                                </span>
-                              </div>
-                              <h4 className="text-lg font-bold text-gray-900 capitalize">{transport.type}</h4>
+                    <div className="space-y-6">
+                      {transportation.map((transport) => (
+                        <div
+                          key={transport.id}
+                          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 p-6"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {transport.name}
+                              </h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                {transport.type}
+                              </p>
                             </div>
-                            <div className="space-y-3">
-                              <div>
-                                <p className="font-semibold text-gray-900">Routes:</p>
-                                <p className="text-gray-600">{transport.routes.join(', ')}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-900">Cost:</p>
-                                <p className="text-gray-600">{transport.approximateCost}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-900">Booking:</p>
-                                <p className="text-gray-600">{transport.bookingInfo}</p>
-                              </div>
+                            {transport.routes && transport.routes.length > 0 && (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {transport.routes.length} routes
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-3 text-gray-600">
+                            {transport.description}
+                          </p>
+                          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Approximate Cost</p>
+                              <p className="font-medium text-gray-900">
+                                {transport.approximateCost || 'Varies'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Booking</p>
+                              <p className="font-medium text-gray-900">
+                                {transport.bookingInfo || 'Available on request'}
+                              </p>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -318,7 +329,7 @@ const CityPage: React.FC = () => {
             <div className="space-y-6">
               {/* Map Placeholder */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Location</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
                 <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
                   <div className="text-center text-gray-600">
                     <MapPinIcon className="h-12 w-12 mx-auto mb-2" />
@@ -326,14 +337,22 @@ const CityPage: React.FC = () => {
                     <p className="text-sm">Google Maps integration</p>
                   </div>
                 </div>
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Coordinates: {city.coordinates.lat}, {city.coordinates.lng}</p>
-                </div>
+                {city.coordinates && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Coordinates: {city.coordinates.lat}, {city.coordinates.lng}</p>
+                    <button 
+                      onClick={viewOnMap}
+                      className="mt-2 text-orange-600 hover:text-orange-800 text-sm font-medium"
+                    >
+                      View on Google Maps
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Weather Widget */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Current Weather</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Weather</h3>
                 <div className="text-center">
                   <div className="text-4xl mb-2">☀️</div>
                   <p className="text-2xl font-bold text-gray-900">28°C</p>
@@ -343,24 +362,34 @@ const CityPage: React.FC = () => {
               </div>
 
               {/* Quick Stats */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Stats</h3>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Quick Stats
+                </h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Attractions</span>
-                    <span className="font-semibold">{city.attractions.length}</span>
+                  <div>
+                    <p className="text-sm text-gray-500">Attractions</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {city.attractions?.length || 0}
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Local Specialties</span>
-                    <span className="font-semibold">{city.localSpecialties.length}</span>
+                  <div>
+                    <p className="text-sm text-gray-500">Local Specialties</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {localSpecialties.length}
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Annual Events</span>
-                    <span className="font-semibold">{city.events.length}</span>
+                  <div>
+                    <p className="text-sm text-gray-500">Upcoming Events</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {events.length}
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Transport Options</span>
-                    <span className="font-semibold">{city.transportation.length}</span>
+                  <div>
+                    <p className="text-sm text-gray-500">Transport Options</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {transportation.length}
+                    </p>
                   </div>
                 </div>
               </div>
