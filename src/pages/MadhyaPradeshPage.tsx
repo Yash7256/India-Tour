@@ -21,58 +21,7 @@ interface CityWithDetails extends City {
 }
 
 const CityCard: React.FC<{ city: CityWithDetails }> = ({ city }) => (
-  <Link to={city.name.toLowerCase() === 'bhopal' ? '/bhopal' : 
-    city.name.toLowerCase() === 'pachmarhi' ? '/pachmarhi' : 
-    city.name.toLowerCase() === 'neemuch' ? '/neemuch' : 
-    city.name.toLowerCase() === 'sheopur' ? '/sheopur' : 
-    city.name.toLowerCase() === 'satna' ? '/satna' : 
-    city.name.toLowerCase() === 'chhatarpur' ? '/chhatarpur' : 
-    city.name.toLowerCase() === 'vidisha' ? '/vidisha' : 
-    city.name.toLowerCase() === 'tikamgarh' ? '/tikamgarh' : 
-    city.name.toLowerCase() === 'sehore' ? '/sehore' : 
-    city.name.toLowerCase() === 'ujjain' ? '/ujjain' : 
-    city.name.toLowerCase() === 'umaria' ? '/umaria' : 
-    city.name.toLowerCase() === 'singrauli' ? '/singrauli' :
-    city.name.toLowerCase() === 'sidhi' ? '/sidhi' : 
-    city.name.toLowerCase() === 'shivpuri' ? '/shivpuri' : 
-    city.name.toLowerCase() === 'shahdol' ? '/shahdol' : 
-    city.name.toLowerCase() === 'seoni' ? '/seoni' : 
-    city.name.toLowerCase() === 'sagar' ? '/sagar' :
-    city.name.toLowerCase() === 'rewa' ? '/rewa' :
-    city.name.toLowerCase() === 'ratlam' ? '/ratlam' :
-    city.name.toLowerCase() === 'raisen' ? '/raisen' :
-    city.name.toLowerCase() === 'panna' ? '/panna' :
-    city.name.toLowerCase() === 'narsinghpur' ? '/narsinghpur' :
-    city.name.toLowerCase() === 'narmadapuram' ? '/narmadapuram' :
-    city.name.toLowerCase() === 'mandsaur' ? '/mandsaur' :
-    city.name.toLowerCase() === 'mandla' ? '/mandla' :
-    city.name.toLowerCase() === 'khargone' ? '/khargone' :
-    city.name.toLowerCase() === 'khandwa' ? '/khandwa' :
-    city.name.toLowerCase() === 'katni' ? '/katni' :
-    city.name.toLowerCase() === 'jhabua' ? '/jhabua' :
-    city.name.toLowerCase() === 'jabalpur' ? '/jabalpur' :
-    city.name.toLowerCase() === 'indore' ? '/indore' :
-    city.name.toLowerCase() === 'gwalior' ? '/gwalior' :
-    city.name.toLowerCase() === 'datia' ? '/datia' :
-    city.name.toLowerCase() === 'dewas' ? '/dewas' :
-    city.name.toLowerCase() === 'chhindwada' ? '/chhindwada' :
-    city.name.toLowerCase() === 'damoh' ? '/damoh' :
-    city.name.toLowerCase() === 'burhanpur' ? '/burhanpur' :
-    city.name.toLowerCase() === 'bhopal' ? '/bhopal' :
-    city.name.toLowerCase() === 'bhind' ? '/bhind' :
-    city.name.toLowerCase() === 'betul' ? '/betul' :
-    city.name.toLowerCase() === 'barwani' ? '/barwani' :
-    city.name.toLowerCase() === 'balaghat' ? '/balaghat' :
-    city.name.toLowerCase() === 'ashokanagar' ? '/ashokanagar' :
-    city.name.toLowerCase() === 'anuppur' ? '/anuppur' :
-    city.name.toLowerCase() === 'alirajpur' ? '/alirajpur' :
-    city.name.toLowerCase() === 'agarmalwa' ? '/agarmalwa' :
-    `#${city.name.toLowerCase()}`}
-
-
-
-
-    className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
+  <Link to={`/${city.name.toLowerCase().replace(/ /g, '')}`} className="block group bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative h-64 overflow-hidden">
       <img
         src={city.image_url || `https://source.unsplash.com/random/800x600/?${city.name},india`}
@@ -122,6 +71,8 @@ const MadhyaPradeshPage: React.FC = () => {
   const [cities, setCities] = useState<CityWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['All']);
+  const [sortBy, setSortBy] = useState<string>('name-asc');
 
   // Fetch cities when component mounts
   useEffect(() => {
@@ -142,17 +93,67 @@ const MadhyaPradeshPage: React.FC = () => {
     loadCities();
   }, [fetchCitiesByState]);
 
+  const allCategories = useMemo(() => {
+    const categories = new Set<string>();
+    cities.forEach(city => {
+      if (city.category) {
+        city.category.split(' / ').forEach(cat => {
+          categories.add(cat.trim());
+        });
+      }
+    });
+    return ['All', ...Array.from(categories).sort()];
+  }, [cities]);
+
+  const handleCategoryChange = (category: string) => {
+    if (category === 'All') {
+      setSelectedCategories(['All']);
+    } else {
+      setSelectedCategories(prev => {
+        const newSelection = prev.includes('All')
+          ? [category]
+          : prev.includes(category)
+            ? prev.filter(c => c !== category)
+            : [...prev, category];
+        return newSelection.length === 0 ? ['All'] : newSelection;
+      });
+    }
+  };
+
   // Filter cities based on search query
   const filteredCities = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return cities;
+    let filtered = [...cities];
+
+    if (!selectedCategories.includes('All')) {
+      filtered = filtered.filter(city => {
+        if (!city.category) return false;
+        const cityCategories = city.category.split(' / ').map(c => c.trim());
+        return selectedCategories.some(sc => cityCategories.includes(sc));
+      });
     }
-    const query = searchQuery.toLowerCase();
-    return cities.filter(city =>
-      city.name.toLowerCase().includes(query) ||
-      (city.description && city.description.toLowerCase().includes(query))
-    );
-  }, [cities, searchQuery]);
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(city =>
+        city.name.toLowerCase().includes(query) ||
+        (city.description && city.description.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'rating-desc':
+          return (b.rating || 0) - (b.rating || 0);
+        case 'rating-asc':
+          return (a.rating || 0) - (b.rating || 0);
+        case 'name-asc':
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+  }, [cities, searchQuery, selectedCategories, sortBy]);
 
   if (isLoading) {
     return (
@@ -214,24 +215,64 @@ const MadhyaPradeshPage: React.FC = () => {
               Discover the heart of Incredible India with its rich heritage, wildlife, and cultural wonders
             </p>
 
-            <div className="max-w-2xl mx-auto relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-4 py-4 border border-transparent rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-blue-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 text-lg"
-                placeholder="Search cities in Madhya Pradesh..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Filter and Sort controls */}
+        <div className="mb-8 p-4 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
+            {/* Search Input */}
+            <div className="lg:col-span-2">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search cities in Madhya Pradesh..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Sort Dropdown */}
+            <div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full block px-4 py-3 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="name-asc">Sort by Name (A-Z)</option>
+                <option value="name-desc">Sort by Name (Z-A)</option>
+                <option value="rating-desc">Sort by Rating (High to Low)</option>
+                <option value="rating-asc">Sort by Rating (Low to High)</option>
+              </select>
+            </div>
+          </div>
+          {/* Category Filters */}
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold text-gray-600 mb-2">Filter by Category:</h3>
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map(category => (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryChange(category)}
+                  className={`px-3 py-1.5 text-sm rounded-full transition-colors duration-200 ${
+                    selectedCategories.includes(category)
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         {/* Cities Grid or Coming Soon Message */}
         {filteredCities.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

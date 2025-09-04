@@ -121,7 +121,7 @@ const ChindwaraPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('Attractions');
   const [places, setPlaces] = useState<Place[]>([]);
-  const [localSpecialties, setLocalSpecialties] = useState<Omit<LocalSpecialty, 'lastUpdated'>[]>([]);
+  const [localSpecialties, setLocalSpecialties] = useState<LocalSpecialty[]>([]);
   const [transportOptions, setTransportOptions] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,7 +136,7 @@ const ChindwaraPage = () => {
       const { data, error } = await supabase
         .from('cities')
         .select('id')
-        .eq('name', 'CHHINDWARA')
+        .ilike('name', 'Chhindwara')
         .eq('state', 'Madhya Pradesh')
         .single();
 
@@ -317,7 +317,7 @@ const ChindwaraPage = () => {
       setIsLoading(true);
       setError(null);
       
-      let response: any = { data: null };
+      let response: any = { data: null, error: null };
       
       switch (selectedTab) {
         case 'Attractions':
@@ -325,106 +325,39 @@ const ChindwaraPage = () => {
             .from('places')
             .select('*')
             .eq('state', 'Madhya Pradesh')
-            .eq('city', 'CHHINDWARA')
+            .ilike('city', 'Chhindwara')
             .order('rating', { ascending: false });
           if (response.data) setPlaces(response.data);
           break;
           
         case 'Local Specialties':
-          try {
-            setIsLoading(true);
-            setError(null);
-            
-            console.log('Fetching local specialties for CHHINDWARA...');
-            
-            // First try exact match with city and state
-            const { data: specialties, error } = await supabase
-              .from('local_specialties')
-              .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-              .eq('city', 'CHHINDWARA')
-              .eq('state', 'Madhya Pradesh')
-              .order('name', { ascending: true });
-            
-            if (error) {
-              console.error('Error fetching specialties:', error);
-              setError('Failed to load local specialties.');
-              return;
-            }
-            
-            if (specialties && specialties.length > 0) {
-              console.log(`Found ${specialties.length} local specialties`);
-        setLocalSpecialties(specialties.map(item => ({
-        ...item,
-        lastUpdated: new Date().toISOString()
-      })));
-            } else {
-              console.log('No local specialties found with exact match, trying case-insensitive search...');
-              
-              // Fallback to case-insensitive search
-              const { data: caseInsensitiveResults } = await supabase
-                .from('local_specialties')
-                .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-                .or('city.ilike.%chhindwara%,state.ilike.%madhya pradesh%')
-                .order('name', { ascending: true });
-                
-              if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
-                console.log(`Found ${caseInsensitiveResults.length} local specialties with case-insensitive search`);
-                setLocalSpecialties(caseInsensitiveResults.map(item => ({
-                  ...item,
-                  lastUpdated: new Date().toISOString()
-                })));
-              } else {
-                console.log('No local specialties found in database');
-                setError('No local specialties found for chhindwara.');
-                setLocalSpecialties([]);
-              }
-            }
-          } catch (err) {
-            console.error('Error in Local Specialties fetch:', err);
-            setError('An error occurred while loading local specialties.');
-            setLocalSpecialties([]);
-          } finally {
-            setIsLoading(false);
+          response = await supabase
+            .from('local_specialties')
+            .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
+            .ilike('city', 'Chhindwara')
+            .eq('state', 'Madhya Pradesh')
+            .order('name', { ascending: true });
+          
+          if (response.data) {
+            setLocalSpecialties(response.data);
           }
           break;
           
         case 'Transport':
-          if (!cityId) {
-            // Try different approaches similar to local specialties
-            response = await supabase
-              .from('transport_options')
-              .select('*')
-              .eq('city', 'CHHINDWARA')
-              .eq('state', 'Madhya Pradesh')
-              .order('name', { ascending: true });
-              
-            if ((!response.data || response.data.length === 0) && cityId) {
-              response = await supabase
-                .from('transport_options')
-                .select('*')
-                .eq('city_id', cityId)
-                .order('name', { ascending: true });
-            }
-            
-            if (!response.data || response.data.length === 0) {
-              response = await supabase
-                .from('transport_options')
-                .select('*')
-                .order('name', { ascending: true });
-                
-              if (response.data) {
-                response.data = response.data.filter((item: TransportOption) => 
-                  item.city?.toLowerCase().includes('chhindwara') ||
-                  item.name?.toLowerCase().includes('chhindwara') ||
-                  item.description?.toLowerCase().includes('chhindwara')
-                );
-              }
-            }
-          } else {
+          if (cityId) {
             response = await supabase
               .from('transport_options')
               .select('*')
               .eq('city_id', cityId)
+              .order('name', { ascending: true });
+          }
+          // Fallback if no data with cityId or no cityId
+          if (!cityId || !response.data || response.data.length === 0) {
+            response = await supabase
+              .from('transport_options')
+              .select('*')
+              .ilike('city', 'Chhindwara')
+              .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
           }
           if (response.data) setTransportOptions(response.data);
@@ -432,46 +365,21 @@ const ChindwaraPage = () => {
           
         case 'Events':
           const today = new Date().toISOString();
-          
-          if (!cityId) {
-            // Try different approaches for events
-            response = await supabase
-              .from('events')
-              .select('*')
-              .eq('city', 'CHHINDWARA')
-              .eq('state', 'Madhya Pradesh')
-              .gte('end_date', today)
-              .order('start_date', { ascending: true });
-              
-            if ((!response.data || response.data.length === 0) && cityId) {
-              response = await supabase
-                .from('events')
-                .select('*')
-                .eq('city_id', cityId)
-                .gte('end_date', today)
-                .order('start_date', { ascending: true });
-            }
-            
-            if (!response.data || response.data.length === 0) {
-              response = await supabase
-                .from('events')
-                .select('*')
-                .gte('end_date', today)
-                .order('start_date', { ascending: true });
-                
-              if (response.data) {
-                response.data = response.data.filter((item: Event) => 
-                  item.city?.toLowerCase().includes('chhindwara') ||
-                  item.location?.toLowerCase().includes('chhindwara') ||
-                  item.name?.toLowerCase().includes('chhindwara')
-                );
-              }
-            }
-          } else {
+          if (cityId) {
             response = await supabase
               .from('events')
               .select('*')
               .eq('city_id', cityId)
+              .gte('end_date', today)
+              .order('start_date', { ascending: true });
+          }
+          // Fallback if no data with cityId or no cityId
+          if (!cityId || !response.data || response.data.length === 0) {
+            response = await supabase
+              .from('events')
+              .select('*')
+              .ilike('city', 'Chhindwara')
+              .eq('state', 'Madhya Pradesh')
               .gte('end_date', today)
               .order('start_date', { ascending: true });
           }
@@ -553,7 +461,7 @@ const ChindwaraPage = () => {
     if (currentData.length === 0) {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">No {selectedTab.toLowerCase()} found for chhindwara.</p>
+          <p className="text-gray-500">No {selectedTab.toLowerCase()} found for Chhindwara.</p>
           <p className="text-sm text-gray-400 mt-2">Data might be available under a different city name or not yet added to the database.</p>
         </div>
       );
