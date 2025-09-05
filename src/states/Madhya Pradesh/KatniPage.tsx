@@ -151,7 +151,7 @@ const KatniPage = () => {
       const { data, error } = await supabase
         .from('cities')
         .select('id')
-        .eq('name', 'KATNI')
+        .ilike('name', 'Katni')
         .eq('state', 'Madhya Pradesh')
         .single();
 
@@ -405,8 +405,8 @@ const KatniPage = () => {
           response = await supabase
             .from('places')
             .select('*')
-            .eq('state', 'Madhya Pradesh')
-            .eq('city', 'KATNI')
+            .eq('state', 'Madhya Pradesh') // Assuming state is consistent
+            .ilike('city', 'Katni')
             .order('rating', { ascending: false });
           if (response.data) setPlaces(response.data);
           break;
@@ -416,43 +416,15 @@ const KatniPage = () => {
             setIsLoading(true);
             setError(null);
             
-            console.log('Fetching local specialties for KATNI...');
-            
-            // First try exact match with city and state
-            const { data: specialties, error } = await supabase
+            response = await supabase
               .from('local_specialties')
               .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-              .eq('city', 'KATNI')
+              .ilike('city', 'Katni')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
             
-            if (error) {
-              console.error('Error fetching specialties:', error);
-              setError('Failed to load local specialties.');
-              return;
-            }
-            
-            if (specialties && specialties.length > 0) {
-              console.log(`Found ${specialties.length} local specialties`);
-        setLocalSpecialties(specialties);
-            } else {
-              console.log('No local specialties found with exact match, trying case-insensitive search...');
-              
-              // Fallback to case-insensitive search
-              const { data: caseInsensitiveResults } = await supabase
-                .from('local_specialties')
-                .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-                .or('city.ilike.%katni%,state.ilike.%madhya pradesh%')
-                .order('name', { ascending: true });
-                
-              if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
-                console.log(`Found ${caseInsensitiveResults.length} local specialties with case-insensitive search`);
-                setLocalSpecialties(caseInsensitiveResults);
-              } else {
-                console.log('No local specialties found in database');
-                setError('No local specialties found for katni.');
-                setLocalSpecialties([]);
-              }
+            if (response.data) {
+              setLocalSpecialties(response.data);
             }
           } catch (err) {
             console.error('Error in Local Specialties fetch:', err);
@@ -469,7 +441,7 @@ const KatniPage = () => {
             response = await supabase
               .from('transport_options')
               .select('*')
-              .eq('city', 'KATNI')
+              .ilike('city', 'Katni')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
               
@@ -513,7 +485,7 @@ const KatniPage = () => {
             response = await supabase
               .from('events')
               .select('*')
-              .eq('city', 'KATNI')
+              .ilike('city', 'Katni')
               .eq('state', 'Madhya Pradesh')
               .gte('end_date', today)
               .order('start_date', { ascending: true });

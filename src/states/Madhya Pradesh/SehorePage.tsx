@@ -136,7 +136,7 @@ const SehorePage = () => {
       const { data, error } = await supabase
         .from('cities')
         .select('id')
-        .eq('name', 'SEHORE')
+        .ilike('name', 'Sehore')
         .eq('state', 'Madhya Pradesh')
         .single();
 
@@ -324,8 +324,8 @@ const lon = 77.0902;
           response = await supabase
             .from('places')
             .select('*')
-            .eq('state', 'Madhya Pradesh')
-            .eq('city', 'SEHORE')
+            .eq('state', 'Madhya Pradesh') // Assuming state is consistent
+            .ilike('city', 'Sehore')
             .order('rating', { ascending: false });
           if (response.data) setPlaces(response.data);
           break;
@@ -335,49 +335,15 @@ const lon = 77.0902;
             setIsLoading(true);
             setError(null);
             
-            console.log('Fetching local specialties for SEHORE...');
-            
-            // First try exact match with city and state
-            const { data: specialties, error } = await supabase
+            response = await supabase
               .from('local_specialties')
               .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-              .eq('city', 'SEHORE')
+              .ilike('city', 'Sehore')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
             
-            if (error) {
-              console.error('Error fetching specialties:', error);
-              setError('Failed to load local specialties.');
-              return;
-            }
-            
-            if (specialties && specialties.length > 0) {
-              console.log(`Found ${specialties.length} local specialties`);
-        setLocalSpecialties(specialties.map(item => ({
-        ...item,
-        lastUpdated: new Date().toISOString()
-      })));
-            } else {
-              console.log('No local specialties found with exact match, trying case-insensitive search...');
-              
-              // Fallback to case-insensitive search
-              const { data: caseInsensitiveResults } = await supabase
-                .from('local_specialties')
-                .select('id, name, description, city, state, image_url, category, created_at, updated_at, city_id')
-                .or('city.ilike.%sehore%,state.ilike.%madhya pradesh%')
-                .order('name', { ascending: true });
-                
-              if (caseInsensitiveResults && caseInsensitiveResults.length > 0) {
-                console.log(`Found ${caseInsensitiveResults.length} local specialties with case-insensitive search`);
-                setLocalSpecialties(caseInsensitiveResults.map(item => ({
-                  ...item,
-                  lastUpdated: new Date().toISOString()
-                })));
-              } else {
-                console.log('No local specialties found in database');
-                setError('No local specialties found for sehore.');
-                setLocalSpecialties([]);
-              }
+            if (response.data) {
+              setLocalSpecialties(response.data);
             }
           } catch (err) {
             console.error('Error in Local Specialties fetch:', err);
@@ -394,7 +360,7 @@ const lon = 77.0902;
             response = await supabase
               .from('transport_options')
               .select('*')
-              .eq('city', 'SEHORE')
+              .ilike('city', 'Sehore')
               .eq('state', 'Madhya Pradesh')
               .order('name', { ascending: true });
               
@@ -438,7 +404,7 @@ const lon = 77.0902;
             response = await supabase
               .from('events')
               .select('*')
-              .eq('city', 'SEHORE')
+              .ilike('city', 'Sehore')
               .eq('state', 'Madhya Pradesh')
               .gte('end_date', today)
               .order('start_date', { ascending: true });

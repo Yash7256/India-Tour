@@ -151,7 +151,7 @@ const IndorePage = () => {
       const { data, error } = await supabase
         .from('cities')
         .select('id')
-        .eq('name', 'INDORE')
+        .ilike('name', 'Indore')
         .eq('state', 'Madhya Pradesh')
         .single();
 
