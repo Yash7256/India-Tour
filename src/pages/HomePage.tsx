@@ -6,13 +6,27 @@ import { useNotifications } from '../context/NotificationContext';
 import Chatbot from '../components/Chatbot';
 
 const HomePage: React.FC = () => {
-  const { places } = useData();
+  const { states, fetchStates } = useData();
   const { getActiveNotifications } = useNotifications();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [featuredStates, setFeaturedStates] = useState<any[]>([]);
   
-  // Group places by state for the featured section
-  const featuredPlaces = places.slice(0, 12); // Get first 12 places for featured section
+  // Fetch states on component mount
+  useEffect(() => {
+    const loadStates = async () => {
+      try {
+        await fetchStates();
+        // Get first 6 states for featured section
+        const featured = states.slice(0, 6);
+        setFeaturedStates(featured);
+      } catch (error) {
+        console.error('Error loading states:', error);
+      }
+    };
+    
+    loadStates();
+  }, [fetchStates]);
   const heroImages = [
     'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=1920',
     'https://images.pexels.com/photos/2437299/pexels-photo-2437299.jpeg?auto=compress&cs=tinysrgb&w=1920',
@@ -98,14 +112,6 @@ const HomePage: React.FC = () => {
             <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto">
               Explore diverse cultures, majestic monuments, and unforgettable experiences across the incredible subcontinent
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Start Your Journey
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300 backdrop-blur-sm">
-                Watch Video
-              </button>
-            </div>
           </div>
         </div>
 
@@ -136,29 +142,29 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredPlaces.map((place, index) => (
+            {featuredStates.map((state, index) => (
               <Link
-                key={place.id}
-                to={`/city/${place.id}`}
+                key={state.id}
+                to={`/destinations/${state.name.toLowerCase().replace(/\s+/g, '-')}`}
                 className="group card-hover-effect"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="bg-white rounded-2xl overflow-hidden shadow-lg h-full flex flex-col">
                   <div className="relative overflow-hidden flex-shrink-0" style={{ height: '200px' }}>
                     <img
-                      src={place.imageUrl || '/images/placeholder.jpg'}
-                      alt={place.name}
+                      src={state.image_url || `https://source.unsplash.com/random/800x600/?${state.name},india`}
+                      alt={state.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/images/placeholder.jpg';
+                        target.src = 'https://source.unsplash.com/random/800x600/?india';
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold">{place.category || 'Tourist Attraction'}</p>
+                          <p className="font-semibold">State of India</p>
                         </div>
                         <ArrowRightIcon className="h-5 w-5" />
                       </div>
@@ -167,28 +173,28 @@ const HomePage: React.FC = () => {
                   
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{state.name}</h3>
                       <div className="flex items-center text-yellow-500">
                         <StarIcon className="h-5 w-5 fill-current" />
-                        <span className="text-sm text-gray-600 ml-1">{place.rating?.toFixed(1) || '4.5'}</span>
+                        <span className="text-sm text-gray-600 ml-1">4.5</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center text-gray-600 mb-3">
                       <MapPinIcon className="h-4 w-4 mr-1 flex-shrink-0" />
                       <span className="text-sm truncate">
-                        {place.city && `${place.city}, `}{place.state}
+                        {state.region || 'India'}
                       </span>
                     </div>
                     
                     <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
-                      {place.description || 'Explore this beautiful destination in India with rich cultural heritage and stunning attractions.'}
+                      {state.description || `Explore the beautiful state of ${state.name} with its rich cultural heritage and stunning attractions.`}
                     </p>
                     
                     <div className="flex items-center justify-between mt-auto pt-2">
                       <div className="flex items-center text-sm text-gray-500">
                         <CalendarIcon className="h-4 w-4 mr-1" />
-                        <span>{place.bestTime || 'Year-round'}</span>
+                        <span>Year-round</span>
                       </div>
                       <span className="text-orange-600 font-semibold group-hover:text-orange-700 transition-colors duration-200">
                         Explore →

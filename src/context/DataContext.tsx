@@ -550,6 +550,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           state:states!inner(*)
         `)
         .eq('state.name', stateName)
+        .not('name', 'in', '("Vidisha","Satna")')
         .order('name', { ascending: true });
 
       if (error) throw error;

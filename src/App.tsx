@@ -10,37 +10,11 @@ import AdminPage from './pages/AdminPage';
 import Destinations from './pages/Destinations';
 import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
-import BhopalPage from './states/Madhya Pradesh/BhopalPage';
-import PachmarhiPage from './states/Madhya Pradesh/PachmarhiPage';
-import TikamgarhPage from './states/Madhya Pradesh/TikamgarhPage';
-import JabalpurPage from './states/Madhya Pradesh/JabalpurPage';
-import IndorePage from './states/Madhya Pradesh/IndorePage';
-import GwaliorPage from './states/Madhya Pradesh/GwaliorPage';
-import DatiaPage from './states/Madhya Pradesh/DatiaPage';
-import DewasPage from './states/Madhya Pradesh/DewasPage';
-import DamohPage from './states/Madhya Pradesh/DamohPage';
-import BurhanpurPage from './states/Madhya Pradesh/BurhanpurPage';
-import BarwaniPage from './states/Madhya Pradesh/BarwaniPage';
-import ChhindwaraPage from './states/Madhya Pradesh/ChindwaraPage';
-import DharPage from './states/Madhya Pradesh/DharPage';
-import KhandwaPage from './states/Madhya Pradesh/KhandwaPage';
-import KhargonePage from './states/Madhya Pradesh/KhargonePage';
-import MandsaurPage from './states/Madhya Pradesh/MandsaurPage';
-import NarmadapuramPage from './states/Madhya Pradesh/NarmadapuramPage';
-import NarsinghpurPage from './states/Madhya Pradesh/NarsinghpurPage';
-import PannaPage from './states/Madhya Pradesh/PannaPage';
-import RaisenPage from './states/Madhya Pradesh/RaisenPage';
-import RewaPage from './states/Madhya Pradesh/RewaPage';
-import SagarPage from './states/Madhya Pradesh/SagarPage';
-import SehorePage from './states/Madhya Pradesh/SehorePage';
-import ShivpuriPage from './states/Madhya Pradesh/ShivpuriPage';
-import UjjainPage from './states/Madhya Pradesh/UjjainPage';
-import UmariaPage from './states/Madhya Pradesh/UmariaPage';
-import KatniPage from './states/Madhya Pradesh/KatniPage';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { cityRoutes } from './cityRoutes';
 import './App.css';
 
 function AppContent() {
@@ -84,33 +58,9 @@ function AppContent() {
                 <Route path="/destinations/uttar-pradesh" element={<UttarPradeshPage />} />
                 <Route path="/destinations/madhya-pradesh" element={<MadhyaPradeshPage />} />
                 <Route path="/city/:cityId" element={<CityPage />} />
-                <Route path="/bhopal" element={<BhopalPage />} />
-                <Route path="/pachmarhi" element={<PachmarhiPage />} />
-                <Route path="/tikamgarh" element={<TikamgarhPage />} />
-                <Route path="/jabalpur" element={<JabalpurPage />} />
-                <Route path="/indore" element={<IndorePage />} />
-                <Route path="/gwalior" element={<GwaliorPage />} />
-                <Route path="/datia" element={<DatiaPage />} />
-                <Route path="/dewas" element={<DewasPage />} />
-                <Route path="/damoh" element={<DamohPage />} />
-                <Route path="/burhanpur" element={<BurhanpurPage />} />
-                <Route path="/barwani" element={<BarwaniPage />} />
-                <Route path="/chhindwada" element={<ChhindwaraPage />} />
-                <Route path="/katni" element={<KatniPage />} />
-                <Route path="/dhar" element={<DharPage />} />
-                <Route path="/khandwa" element={<KhandwaPage />} />
-                <Route path="/khargone" element={<KhargonePage />} />
-                <Route path="/mandsaur" element={<MandsaurPage />} />
-                <Route path="/narmadapuram" element={<NarmadapuramPage />} />
-                <Route path="/narsinghpur" element={<NarsinghpurPage />} />
-                <Route path="/panna" element={<PannaPage />} />
-                <Route path="/raisen" element={<RaisenPage />} />
-                <Route path="/rewa" element={<RewaPage />} />
-                <Route path="/sagar" element={<SagarPage />} />
-                <Route path="/sehore" element={<SehorePage />} />
-                <Route path="/shivpuri" element={<ShivpuriPage />} />
-                <Route path="/ujjain" element={<UjjainPage />} />
-                <Route path="/umaria" element={<UmariaPage />} />
+                {cityRoutes.map(({ path, Component }) => (
+                  <Route key={path} path={path} element={<Component />} />
+                ))}
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>
