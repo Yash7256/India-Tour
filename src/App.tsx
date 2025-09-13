@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -10,10 +11,12 @@ import AdminPage from './pages/AdminPage';
 import Destinations from './pages/Destinations';
 import UttarPradeshPage from './pages/UttarPradeshPage';
 import MadhyaPradeshPage from './pages/MadhyaPradeshPage';
+import DigitalIDPage from './pages/DigitalIDPage';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { DigitalIDProvider } from './context/DigitalIDContext';
 import { cityRoutes } from './cityRoutes';
 import './App.css';
 
@@ -46,9 +49,11 @@ function AppContent() {
   }
 
   return (
-    <DataProvider>
-      <NotificationProvider>
-        <Router>
+    <HelmetProvider>
+      <DataProvider>
+        <NotificationProvider>
+          <DigitalIDProvider>
+          <Router>
           <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
             <main className="flex-grow">
@@ -62,15 +67,18 @@ function AppContent() {
                   <Route key={path} path={path} element={<Component />} />
                 ))}
                 <Route path="/profile" element={<UserProfile />} />
+                <Route path="/digital-id" element={<DigitalIDPage />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>
             </main>
             <Footer />
           </div>
-        </Router>
-        <Analytics />
-      </NotificationProvider>
-    </DataProvider>
+            </Router>
+            <Analytics />
+          </DigitalIDProvider>
+        </NotificationProvider>
+      </DataProvider>
+    </HelmetProvider>
   );
 }
 

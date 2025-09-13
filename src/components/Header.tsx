@@ -3,9 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   MagnifyingGlassIcon, 
   BellIcon, 
-  UserIcon, 
-  HeartIcon, 
-  ChevronDownIcon, 
   Bars3Icon, 
   XMarkIcon,
   HomeIcon,
@@ -22,7 +19,7 @@ import NotificationPanel from './NotificationPanel';
 import ProfileEditModal from './ProfileEditModal';
 
 const Header: React.FC = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut } = useAuth();
   const { getUnreadCount } = useNotifications();
   const { searchCities } = useData();
   const navigate = useNavigate();
@@ -44,7 +41,7 @@ const Header: React.FC = () => {
   const unreadCount = getUnreadCount();
 
   // ChaiCode-inspired navigation items with icons
-  const navigationItems = [
+  const allNavigationItems = [
     { 
       name: 'Home', 
       href: '/', 
@@ -56,6 +53,16 @@ const Header: React.FC = () => {
       href: '/destinations', 
       current: location.pathname === '/destinations',
       icon: MapPinIcon
+    },
+    { 
+      name: 'Digital ID', 
+      href: '/digital-id', 
+      current: location.pathname === '/digital-id',
+      icon: () => (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      )
     },
     { 
       name: 'Gallery', 
@@ -76,6 +83,8 @@ const Header: React.FC = () => {
       icon: PhoneIcon
     }
   ];
+
+  const navigationItems = allNavigationItems;
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -219,85 +228,15 @@ const Header: React.FC = () => {
                 )}
               </button>
 
-              {/* User Menu */}
-              {user ? (
-                <div className="flex items-center space-x-3 relative">
-                  <Link
-                    to="/profile"
-                    className="p-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-all duration-200"
-                    title="Wishlist"
-                  >
-                    <HeartIcon className="h-5 w-5" />
-                  </Link>
-                  
-                  <div className="relative user-menu">
-                    <button
-                      onClick={() => setShowUserDropdown(!showUserDropdown)}
-                      className="flex items-center space-x-2 hover:bg-gray-50 rounded-xl px-3 py-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    >
-                      <img
-                        src={user.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=100'}
-                        alt={user.full_name || 'User'}
-                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-                      />
-                      <ChevronDownIcon className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* User Dropdown */}
-                    {showUserDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
-                          <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setIsProfileEditModalOpen(true);
-                            setShowUserDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
-                        >
-                          <UserIcon className="h-4 w-4" />
-                          <span>Edit Profile</span>
-                        </button>
-                        <Link
-                          to="/profile"
-                          onClick={() => setShowUserDropdown(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
-                        >
-                          <HeartIcon className="h-4 w-4" />
-                          <span>My Wishlist</span>
-                        </Link>
-                        {user.role === 'admin' && (
-                          <Link
-                            to="/admin"
-                            onClick={() => setShowUserDropdown(false)}
-                            className="block px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 transition-colors duration-200 flex items-center space-x-2"
-                          >
-                            <span className="w-4 h-4 bg-purple-600 rounded text-white text-xs flex items-center justify-center">A</span>
-                            <span>Admin Panel</span>
-                          </Link>
-                        )}
-                        <hr className="my-2" />
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : !loading ? (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="px-6 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+              {/* Admin Panel Link - Only show if user is admin */}
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200 flex items-center space-x-2"
                 >
-                  Login
-                </button>
-              ) : (
-                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                  <span className="w-5 h-5 bg-purple-600 rounded text-white text-xs flex items-center justify-center">A</span>
+                  <span>Admin</span>
+                </Link>
               )}
 
               {/* Mobile/Tablet menu button - ChaiCode Style */}
@@ -445,7 +384,7 @@ const Header: React.FC = () => {
                         setIsProfileEditModalOpen(true);
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     >
                       Edit Profile
                     </button>
@@ -455,6 +394,16 @@ const Header: React.FC = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200"
                     >
                       My Wishlist
+                    </Link>
+                    <Link
+                      to="/digital-id"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      My Digital ID
                     </Link>
                     {user.role === 'admin' && (
                       <Link

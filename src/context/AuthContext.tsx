@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import type { Database } from '../lib/supabase';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -22,6 +22,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAuthenticated: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
@@ -29,6 +30,8 @@ interface AuthContextType {
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   addToFavorites: (cityId: string) => Promise<void>;
   removeFromFavorites: (cityId: string) => Promise<void>;
+  displayName?: string;
+  phoneNumber?: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const isAuthenticated = !!session?.user;
 
   useEffect(() => {
     // Get initial session
@@ -58,9 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
       setSession(session);
       
       if (session?.user) {
@@ -191,18 +193,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      loading,
-      signInWithGoogle,
-      signInWithEmail,
-      signUpWithEmail,
-      signOut,
-      updateProfile,
-      addToFavorites,
-      removeFromFavorites,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        isAuthenticated,
+        signInWithGoogle,
+        signInWithEmail,
+        signUpWithEmail,
+        signOut,
+        updateProfile,
+        addToFavorites,
+        removeFromFavorites,
+        displayName: user?.full_name || user?.email?.split('@')[0],
+        phoneNumber: user?.phone,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
